@@ -228,14 +228,13 @@ const JDInput: React.FC<JDInputProps> = ({ jdText, setJdText, jobPosition, setJo
 
   return (
     <section id="module-jd" className="module-pane active w-full min-h-screen flex flex-col" aria-labelledby="jd-title">
-      <div className="w-full px-4 sm:px-4 lg:px-6 xl:px-8 py-6 flex flex-col flex-1 overflow-hidden">
+      <div className="w-full px-0 md:px-4 lg:px-6 xl:px-8 py-6 flex flex-col flex-1 overflow-hidden">
         {/* Unified Container for all 3 sections */}
-        <div className="flex flex-col flex-1 min-h-0 bg-slate-900/60 border border-slate-800 rounded-xl p-4 gap-4">
+        <div className="flex flex-col flex-1 min-h-0 bg-slate-900/60 border-l-0 md:border-l border-t border-r border-b border-slate-800 md:rounded-xs rounded-none p-4 gap-4 md:rounded-xl">
           {/* Job Position Input */}
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 pb-6">
             <label htmlFor="job-position" className="flex items-center justify-between text-xs font-semibold tracking-wide text-slate-100">
               <span className="flex items-center gap-2 uppercase">
-                <i className="fa-solid fa-briefcase text-slate-300"></i>
                 Chức danh công việc <span className="text-red-300">*</span>
               </span>
               <span className="text-[11px] font-normal text-slate-400">Tối đa 100 ký tự</span>
@@ -245,7 +244,7 @@ const JDInput: React.FC<JDInputProps> = ({ jdText, setJdText, jobPosition, setJo
               id="job-position"
               value={jobPosition}
               onChange={(e) => setJobPosition(e.target.value)}
-              className="mt-3 w-full text-base px-3 py-2 bg-slate-950/40 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-400 focus:border-cyan-400"
+              className="mt-3 w-full text-base px-3 py-3 bg-slate-950/40 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-400 focus:border-cyan-400"
               placeholder="Ví dụ: Senior Frontend Developer, Product Manager…"
               maxLength={100}
             />
@@ -255,17 +254,9 @@ const JDInput: React.FC<JDInputProps> = ({ jdText, setJdText, jobPosition, setJo
           <div className="flex-1 flex flex-col min-h-0">
             <label htmlFor="job-description" className="flex items-center justify-between text-xs font-semibold tracking-wide text-slate-100">
               <span className="flex items-center gap-2 uppercase">
-                <i className="fa-solid fa-file-lines text-slate-300"></i>
                 Job Description <span className="text-red-300">*</span>
               </span>
-              <button
-                type="button"
-                className="text-[11px] text-slate-400 hover:text-slate-200 transition-colors"
-                title="Mô tả, yêu cầu, quyền lợi, thông tin công ty, KPI quan trọng"
-                aria-label="Hướng dẫn điền JD"
-              >
-                ℹ️
-              </button>
+
             </label>
             <div className="relative mt-3 flex-1 flex flex-col min-h-0 overflow-hidden">
               <textarea
