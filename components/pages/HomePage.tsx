@@ -716,6 +716,52 @@ const HomePage: React.FC<HomePageProps> = ({ setActiveStep, isLoggedIn, onLoginR
           </div>
         </div>
 
+        <div id="pricing" className="mt-8 sm:mt-12 rounded-3xl border border-slate-800 bg-slate-900/70 p-6 sm:p-8">
+          <div className="text-center mb-6">
+            <p className="text-xs font-semibold tracking-[0.35em] text-cyan-200 uppercase">Bảng giá</p>
+            <h2 className="mt-2 text-2xl sm:text-3xl font-bold text-white">Gói sử dụng</h2>
+            <p className="mt-2 text-sm text-slate-400 max-w-2xl mx-auto">Chọn gói phù hợp với quy mô tuyển dụng của bạn. Dùng thử miễn phí cho gói Free.</p>
+          </div>
+
+          <div className="w-full overflow-x-auto -mx-2">
+            <div className="min-w-[900px] grid grid-cols-5 gap-4 px-2">
+              {[
+                { name: 'FREE TIER', price: '$0 / tháng', cap: '50CV', duration: 'Vĩnh viễn', notes: ['Chuẩn hóa JD cơ bản', 'Loc tiêu chí - cứng', 'Chấm điểm AI sơ bộ'] },
+                { name: 'BASIC', price: '$39 / tháng', cap: '300CV', duration: '1 Tháng', notes: ['Tất cả tính năng Free', 'Xuất kết quả ra Excel', 'Gửi email tự động cho ứng viên đạt/trượt'] },
+                { name: 'STANDARD', price: '$99 / tháng', cap: '1000 CV', duration: '1 Tháng', notes: ['Tất cả tính năng Basic', 'Tùy chỉnh trọng số', 'Biểu đồ phân tích năng lực'] },
+                { name: 'PREMIUM', price: '$249 / tháng', cap: '5000CV', duration: '1 Tháng (Cam kết 6 tháng)', notes: ['Tất cả tính năng Standard', 'API tích hợp ATS', 'Hỗ trợ ưu tiên 24/7'] },
+                { name: 'ENTERPRISE', price: '$599 / tháng', cap: '20 000CV', duration: '1 Tháng (Cam kết 12 tháng)', notes: ['Tất cả tính năng Premium', 'Private Cloud', 'Quản lý tài khoản riêng (Account Manager)'] },
+              ].map((pkg) => (
+                <div key={pkg.name} className="rounded-2xl border border-white/10 bg-gradient-to-br from-slate-950 to-slate-900 p-4 flex flex-col items-start gap-4">
+                  <div className="w-full flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-semibold tracking-widest text-slate-400">{pkg.name}</p>
+                      <p className="mt-2 text-2xl font-bold text-white">{pkg.price}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-slate-300">{pkg.cap}</p>
+                      <p className="text-[11px] text-slate-400">{pkg.duration}</p>
+                    </div>
+                  </div>
+
+                  <ul className="text-sm text-slate-300 list-inside space-y-1">
+                    {pkg.notes.map((n) => (
+                      <li key={n} className="flex items-start gap-3">
+                        <span className="w-6 h-6 flex items-center justify-center rounded-full bg-emerald-500/10 text-emerald-300 text-xs">✓</span>
+                        <span>{n}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="mt-auto w-full">
+                    <button className="w-full h-10 rounded-full bg-gradient-to-r from-cyan-500 to-emerald-400 text-slate-950 font-semibold">Chọn gói</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
         <div id="why-support-hr" className="mt-8 sm:mt-12 rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-5 sm:p-8">
           <div className="grid gap-8 lg:grid-cols-2">
             <div>
