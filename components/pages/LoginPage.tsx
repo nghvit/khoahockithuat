@@ -33,11 +33,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className={`min-h-screen flex items-center justify-center relative overflow-hidden transition-all duration-800 ${successStage === 'transitioning' ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`} style={{ backgroundColor: '#0B1220' }}>
-      {/* AI Aurora Effect - matching main app */}
+    <div className={`min-h-screen flex items-center justify-center relative overflow-hidden transition-all duration-800 ${successStage === 'transitioning' ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`} style={{ backgroundColor: '#020617' }}>
+      {/* AI Aurora Effect */}
       <div className="ai-aurora"></div>
-      
-      {/* Grid Overlay - matching main app */}
       <div className="grid-overlay"></div>
       
       {/* Animated background elements */}
@@ -59,7 +57,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         )}
       </div>
 
-      <div className="relative z-10 w-full flex flex-col items-center justify-center px-4">
+      <div className="relative z-10 w-full flex flex-col items-center justify-center px-4 py-8">
         {/* Success Notification */}
         {showSuccess && (
           <div className={`mb-6 p-4 bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/50 rounded-2xl backdrop-blur-sm shadow-lg transition-all duration-700 ease-out transform max-w-md w-full
@@ -88,54 +86,101 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           </div>
         )}
 
-        {/* Main card */}
-        <div className={`backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl shadow-2xl p-8 max-w-md w-full transform transition-all duration-500 hover:scale-[1.02] ${successStage === 'celebrating' ? 'scale-105 shadow-green-500/20 border-green-400/30 animate-pulse' : ''}`} style={{ background: 'linear-gradient(145deg, rgba(17,24,39,0.6), rgba(11,18,30,0.5))' }}>
-          {/* Logo/Brand Section */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-24 h-24 rounded-xl shadow-lg mb-4 transform hover:scale-110 transition-transform duration-300 overflow-hidden">
-              <img 
-                src="/images/logos/logo.jpg" 
-                alt="Support HR Logo" 
-                className="w-full h-full object-contain"
-              />
+        <div className="grid lg:grid-cols-2 gap-8 max-w-5xl w-full items-center">
+          {/* Left side - Features/Benefits */}
+          <div className="hidden lg:flex flex-col justify-center space-y-6">
+            <div className="space-y-2">
+              <h2 className="text-4xl font-bold text-white leading-tight">
+                Tuyển dụng <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-emerald-400">thông minh</span> hơn
+              </h2>
+              <p className="text-lg text-slate-300">Giảm 70% thời gian sàng lọc CV nhờ AI</p>
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2">
-              Chào mừng đến với Support HR
-            </h1>
-            <p className="text-slate-400 text-base">
-              Hệ thống tuyển dụng thông minh với AI
-            </p>
+            
+            <div className="space-y-4">
+              {[
+                { icon: 'fa-solid fa-lightning-bolt', title: 'Nhanh gấp 10 lần', desc: 'Xử lý 100 CV trong vài phút' },
+                { icon: 'fa-solid fa-bullseye', title: '95%+ độ chính xác', desc: 'AI chuyên biệt cho tuyển dụng Việt' },
+                { icon: 'fa-solid fa-lock', title: 'Bảo mật tối đa', desc: 'Dữ liệu ứng viên được mã hóa' },
+              ].map((feature, idx) => (
+                <div key={idx} className="flex items-start gap-4 p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500/20 to-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                    <i className={`${feature.icon} text-cyan-400`}></i>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-white">{feature.title}</h3>
+                    <p className="text-sm text-slate-400">{feature.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Google Sign In Button */}
-          <div className="space-y-4">
-            <button
-              type="button"
-              onClick={handleGoogleSignIn}
-              className="w-full flex justify-center items-center py-4 px-6 border border-white/20 rounded-xl shadow-lg text-base font-semibold text-white bg-white/5 hover:bg-white/10 hover:border-white/30 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transform transition-all duration-200 hover:scale-[1.02] backdrop-blur-sm group"
-            >
-              <svg className="w-6 h-6 mr-3 group-hover:scale-110 transition-transform duration-200" viewBox="0 0 24 24">
-                <path fill="#EA4335" d="M5.26620003,9.76452941 C6.19878754,6.93863203 8.85444915,4.90909091 12,4.90909091 C13.6909091,4.90909091 15.2181818,5.50909091 16.4181818,6.49090909 L19.9090909,3 C17.7818182,1.14545455 15.0545455,0 12,0 C7.27006974,0 3.1977497,2.69829785 1.23999023,6.65002441 L5.26620003,9.76452941 Z"/>
-                <path fill="#34A853" d="M16.0407269,18.0125889 C14.9509167,18.7163016 13.5660892,19.0909091 12,19.0909091 C8.86648613,19.0909091 6.21911939,17.076871 5.27698177,14.2678769 L1.23746264,17.3349879 C3.19279051,21.2936293 7.26500293,24 12,24 C14.9328362,24 17.7353462,22.9573905 19.834192,20.9995801 L16.0407269,18.0125889 Z"/>
-                <path fill="#4A90E2" d="M19.834192,20.9995801 C22.0291676,18.9520994 23.4545455,15.903663 23.4545455,12 C23.4545455,11.2909091 23.3454545,10.5818182 23.1818182,9.90909091 L12,9.90909091 L12,14.4545455 L18.4363636,14.4545455 C18.1187732,16.013626 17.2662994,17.2212117 16.0407269,18.0125889 L19.834192,20.9995801 Z"/>
-                <path fill="#FBBC05" d="M5.27698177,14.2678769 C5.03832634,13.556323 4.90909091,12.7937589 4.90909091,12 C4.90909091,11.2182781 5.03443647,10.4668121 5.26620003,9.76452941 L1.23999023,6.65002441 C0.43658717,8.26043162 0,10.0753848 0,12 C0,13.9195484 0.444780743,15.7301709 1.23746264,17.3349879 L5.27698177,14.2678769 Z"/>
-              </svg>
-              Đăng nhập với Google
-            </button>
-            
-            <div className="text-center pt-2">
+          {/* Right side - Login Card */}
+          <div className="flex flex-col items-center">
+            {/* Main card */}
+            <div className={`backdrop-blur-xl bg-gradient-to-br from-slate-950/80 to-slate-900/60 border border-white/10 rounded-3xl shadow-2xl p-8 w-full max-w-md transform transition-all duration-500 hover:border-white/20 ${successStage === 'celebrating' ? 'scale-105 shadow-green-500/20 border-green-400/30 animate-pulse' : ''}`}>
+              {/* Logo/Brand Section */}
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl shadow-lg mb-6 transform hover:scale-110 transition-transform duration-300 overflow-hidden bg-gradient-to-br from-cyan-500/20 to-emerald-500/20 border border-cyan-500/30">
+                  <img 
+                    src="/images/logos/logo.jpg" 
+                    alt="Support HR Logo" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <h1 className="text-3xl font-bold text-white mb-2">
+                  Support HR
+                </h1>
+                <p className="text-slate-400 text-sm">
+                  Nền tảng tuyển dụng AI hiện đại
+                </p>
+              </div>
+
+              {/* Features Preview */}
+              <div className="mb-8 space-y-3">
+                {[
+                  { icon: 'fa-solid fa-filter', text: 'Sàng lọc CV thông minh' },
+                  { icon: 'fa-solid fa-chart-line', text: 'Phân tích năng lực chi tiết' },
+                  { icon: 'fa-solid fa-microphone', text: 'Gợi ý câu hỏi phỏng vấn' },
+                ].map((item, idx) => (
+                  <div key={idx} className="flex items-center gap-3 text-sm">
+                    <span className="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-300">
+                      <i className={`${item.icon} text-xs`}></i>
+                    </span>
+                    <span className="text-slate-200">{item.text}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Google Sign In Button */}
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                className="w-full flex justify-center items-center py-3 px-6 border border-white/20 rounded-xl shadow-lg text-base font-semibold text-white bg-gradient-to-r from-cyan-500/10 to-emerald-500/10 hover:from-cyan-500/20 hover:to-emerald-500/20 hover:border-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transform transition-all duration-200 hover:scale-[1.02] backdrop-blur-sm group mb-4"
+              >
+                <svg className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-200" viewBox="0 0 24 24">
+                  <path fill="#EA4335" d="M5.26620003,9.76452941 C6.19878754,6.93863203 8.85444915,4.90909091 12,4.90909091 C13.6909091,4.90909091 15.2181818,5.50909091 16.4181818,6.49090909 L19.9090909,3 C17.7818182,1.14545455 15.0545455,0 12,0 C7.27006974,0 3.1977497,2.69829785 1.23999023,6.65002441 L5.26620003,9.76452941 Z"/>
+                  <path fill="#34A853" d="M16.0407269,18.0125889 C14.9509167,18.7163016 13.5660892,19.0909091 12,19.0909091 C8.86648613,19.0909091 6.21911939,17.076871 5.27698177,14.2678769 L1.23746264,17.3349879 C3.19279051,21.2936293 7.26500293,24 12,24 C14.9328362,24 17.7353462,22.9573905 19.834192,20.9995801 L16.0407269,18.0125889 Z"/>
+                  <path fill="#4A90E2" d="M19.834192,20.9995801 C22.0291676,18.9520994 23.4545455,15.903663 23.4545455,12 C23.4545455,11.2909091 23.3454545,10.5818182 23.1818182,9.90909091 L12,9.90909091 L12,14.4545455 L18.4363636,14.4545455 C18.1187732,16.013626 17.2662994,17.2212117 16.0407269,18.0125889 L19.834192,20.9995801 Z"/>
+                  <path fill="#FBBC05" d="M5.27698177,14.2678769 C5.03832634,13.556323 4.90909091,12.7937589 4.90909091,12 C4.90909091,11.2182781 5.03443647,10.4668121 5.26620003,9.76452941 L1.23999023,6.65002441 C0.43658717,8.26043162 0,10.0753848 0,12 C0,13.9195484 0.444780743,15.7301709 1.23746264,17.3349879 L5.27698177,14.2678769 Z"/>
+                </svg>
+                Đăng nhập với Google
+              </button>
+              
+              <div className="text-center">
+                <p className="text-slate-500 text-xs leading-relaxed">
+                  Bằng cách đăng nhập bạn đồng ý với <a href="#" className="text-cyan-400 hover:text-cyan-300">điều khoản sử dụng</a> và <a href="#" className="text-cyan-400 hover:text-cyan-300">chính sách bảo mật</a>
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="text-center mt-8">
               <p className="text-slate-500 text-xs">
-                Bằng cách đăng nhập, bạn đồng ý với điều khoản sử dụng
+                © 2025 Support HR - Hệ thống tuyển dụng AI
               </p>
             </div>
           </div>
-        </div>
-
-        {/* Footer */}
-        <div className="text-center mt-6">
-          <p className="text-slate-500 text-xs">
-            © 2025 Support HR - Hệ thống tuyển dụng AI
-          </p>
         </div>
       </div>
     </div>
