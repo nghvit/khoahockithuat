@@ -3,111 +3,109 @@ import { Link } from 'react-router-dom';
 
 const Footer: React.FC = () => {
   return (
-    <footer className="mt-auto bg-gradient-to-b from-slate-950 via-slate-900 to-slate-900 border-t border-slate-800/80">
-      <div className="max-w-6xl mx-auto px-5 sm:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-          {/* Left column */}
-          <div className="space-y-5">
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <img
-                  src="/images/logos/logo.jpg"
-                  alt="SupportHR Logo"
-                  className="w-14 h-14 rounded-2xl object-cover border border-slate-700/80 shadow-lg shadow-cyan-500/10"
-                  onError={(event) => {
-                    const target = event.target as HTMLImageElement;
-                    target.style.display = 'none';
-                    const fallbackIcon = target.nextElementSibling;
-                    if (fallbackIcon) {
-                      (fallbackIcon as HTMLElement).classList.remove('hidden');
-                    }
-                  }}
-                />
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-emerald-400 flex items-center justify-center text-white text-lg shadow-lg shadow-cyan-400/40 hidden">
-                  <i className="fa-solid fa-circle-nodes"></i>
-                </div>
+    <footer className="mt-auto bg-slate-950 border-t border-slate-800/50">
+      <div className="max-w-7xl mx-auto px-5 sm:px-8">
+        {/* Main Footer Content */}
+        <div className="py-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          {/* Brand Section */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <img
+                src="/images/logos/logo.jpg"
+                alt="SupportHR"
+                className="w-8 h-8 rounded-lg object-cover"
+                onError={(event) => {
+                  const target = event.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const fallback = target.nextElementSibling;
+                  if (fallback) (fallback as HTMLElement).classList.remove('hidden');
+                }}
+              />
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-emerald-400 flex items-center justify-center text-white text-xs font-bold hidden">
+                HR
               </div>
-              <div>
-                <p className="text-lg font-semibold text-white tracking-tight">SupportHR</p>
-                <p className="text-sm text-slate-400">Nền tảng AI hỗ trợ tuyển dụng</p>
-              </div>
+              <span className="text-sm font-bold text-white">SupportHR</span>
             </div>
-            <p className="text-base text-slate-300 leading-relaxed max-w-xl">
-              Nền tảng AI hỗ trợ tuyển dụng thông minh, tối ưu sàng lọc CV.
+            <p className="text-xs leading-relaxed text-slate-400">
+              Nền tảng AI chuyên biệt cho quy trình tuyển dụng. Tự động sàng lọc, phân tích và tìm ứng viên sáng giá.
             </p>
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-950/70 border border-emerald-400/60 text-emerald-200 text-xs font-medium shadow-lg shadow-emerald-500/20">
-              <i className="fa-solid fa-sparkles text-[13px] text-cyan-200"></i>
-              <span>Giải pháp AI tuyển dụng cho doanh nghiệp</span>
+            <div className="flex items-center gap-2 text-xs">
+              <span className="inline-flex items-center gap-1 text-emerald-400">
+                <i className="fa-solid fa-check"></i>
+                Sẵn dùng 24/7
+              </span>
             </div>
           </div>
 
-          {/* Right column */}
-          <div className="rounded-2xl bg-slate-900/70 border border-slate-800/70 p-6 shadow-xl shadow-slate-100/5 space-y-4">
-            <h4 className="text-base font-semibold text-white tracking-wide uppercase">Thông tin liên hệ</h4>
-            <div className="space-y-4 text-sm text-slate-300">
-              <div className="flex items-center gap-3">
-                <span className="w-9 h-9 rounded-full bg-cyan-500/10 border border-cyan-500/40 text-cyan-300 flex items-center justify-center">
-                  <i className="fa-solid fa-phone"></i>
-                </span>
-                <a href="tel:0899280108" className="font-medium text-white hover:text-cyan-300 transition-colors">
+          {/* Product */}
+          <div>
+            <h4 className="text-xs font-bold text-white uppercase tracking-wide mb-3 text-slate-300">Sản phẩm</h4>
+            <ul className="space-y-2 text-xs text-slate-400">
+              <li><a href="#features" className="hover:text-cyan-400 transition-colors">Tính năng chính</a></li>
+              <li><a href="#pricing" className="hover:text-cyan-400 transition-colors">Bảng giá</a></li>
+              <li><a href="#compare" className="hover:text-cyan-400 transition-colors">So sánh</a></li>
+              <li><a href="#steps" className="hover:text-cyan-400 transition-colors">Cách sử dụng</a></li>
+            </ul>
+          </div>
+
+          {/* Company */}
+          <div>
+            <h4 className="text-xs font-bold text-white uppercase tracking-wide mb-3 text-slate-300">Công ty</h4>
+            <ul className="space-y-2 text-xs text-slate-400">
+              <li><a href="#about" className="hover:text-cyan-400 transition-colors">Về chúng tôi</a></li>
+              <li><a href="#blog" className="hover:text-cyan-400 transition-colors">Blog</a></li>
+              <li><a href="#careers" className="hover:text-cyan-400 transition-colors">Tuyển dụng</a></li>
+              <li><a href="#changelog" className="hover:text-cyan-400 transition-colors">Changelog</a></li>
+            </ul>
+          </div>
+
+          {/* Contact */}
+          <div>
+            <h4 className="text-xs font-bold text-white uppercase tracking-wide mb-3 text-slate-300">Liên hệ</h4>
+            <div className="space-y-2.5 text-xs text-slate-400">
+              <div>
+                <p className="text-slate-500 mb-1">Điện thoại</p>
+                <a href="tel:0899280108" className="text-white hover:text-cyan-400 transition-colors font-medium">
                   0899 280 108
                 </a>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="w-9 h-9 rounded-full bg-emerald-500/10 border border-emerald-500/40 text-emerald-300 flex items-center justify-center">
-                  <i className="fa-solid fa-envelope"></i>
-                </span>
-                <a href="mailto:support@supporthr.vn" className="font-medium text-white hover:text-emerald-300 transition-colors">
+              <div>
+                <p className="text-slate-500 mb-1">Email</p>
+                <a href="mailto:support@supporthr.vn" className="text-white hover:text-cyan-400 transition-colors font-medium">
                   support@supporthr.vn
                 </a>
               </div>
-              <p className="pl-12 text-[13px] text-slate-400">
-                Liên hệ để nhận hỗ trợ hoặc trải nghiệm demo.
-              </p>
             </div>
           </div>
         </div>
 
-        <div className="mt-10 pt-8 border-t border-slate-800/70">
-          <div className="flex flex-col items-center gap-6">
-            {/* Copyright & Attribution */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 text-sm">
-              <span className="text-slate-300 font-medium">© 2026 Support HR. All rights reserved.</span>
-              <span className="hidden sm:inline text-slate-600">·</span>
-              <span className="text-slate-400">
-                Copyright belongs to{' '}
-                <a 
-                  href="https://github.com/phucwebdev" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="inline-flex items-center gap-1.5 text-cyan-400 hover:text-cyan-300 font-semibold transition-colors group"
-                >
-                  <i className="fa-brands fa-github text-base group-hover:scale-110 transition-transform"></i>
-                  phucdevweb
-                </a>
-              </span>
-            </div>
+        {/* Divider */}
+        <div className="h-px bg-gradient-to-r from-transparent via-slate-700/50 to-transparent"></div>
 
-            {/* Policy Links */}
-            <div className="flex items-center gap-5">
-              <Link
-                to="/privacy-policy"
-                aria-label="Privacy Policy"
-                className="text-slate-400 hover:text-cyan-300 text-sm font-medium transition-colors flex items-center gap-2 group"
-              >
-                <i className="fa-solid fa-shield-halved text-xs group-hover:scale-110 transition-transform"></i>
-                Chính sách bảo mật
-              </Link>
-              <span className="text-slate-700">|</span>
-              <Link
-                to="/terms"
-                aria-label="Terms of Service"
-                className="text-slate-400 hover:text-cyan-300 text-sm font-medium transition-colors flex items-center gap-2 group"
-              >
-                <i className="fa-solid fa-file-contract text-xs group-hover:scale-110 transition-transform"></i>
-                Điều khoản
-              </Link>
-            </div>
+        {/* Bottom Footer */}
+        <div className="py-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
+          <div className="flex items-center gap-2">
+            <span>© 2026 SupportHR.</span>
+            <span className="hidden sm:inline">|</span>
+            <a 
+              href="https://github.com/phucwebdev" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:text-cyan-400 transition-colors inline-flex items-center gap-1"
+            >
+              <i className="fa-brands fa-github text-xs"></i>
+              phucdevweb
+            </a>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <Link to="/privacy-policy" className="hover:text-cyan-400 transition-colors">
+              Bảo mật
+            </Link>
+            <span className="text-slate-700">|</span>
+            <Link to="/terms" className="hover:text-cyan-400 transition-colors">
+              Điều khoản
+            </Link>
           </div>
         </div>
       </div>

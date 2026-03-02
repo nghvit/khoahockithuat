@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import ChatBubble from '../ui/ChatBubble';
 import type { AppStep } from '../../types';
 
 interface HomePageProps {
@@ -28,7 +29,6 @@ type ComparisonRow = {
 };
 
 const HomePage: React.FC<HomePageProps> = ({ setActiveStep, isLoggedIn, onLoginRequest, completedSteps }) => {
-  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const heroHighlight = 'Nhanh Gấp 10 Lần.';
   const [typedHighlight, setTypedHighlight] = useState('');
 
@@ -59,8 +59,6 @@ const HomePage: React.FC<HomePageProps> = ({ setActiveStep, isLoggedIn, onLoginR
     { label: 'Doanh nghiệp', target: 'partners' },
     { label: 'Lý do chọn', target: 'why-support-hr' },
     { label: 'So sánh', target: 'compare' },
-    { label: 'Liên hệ', target: 'contact' },
-    { label: 'FAQ', target: 'faq' },
   ];
 
   const handleSectionScroll = (targetId: string) => {
@@ -222,33 +220,6 @@ const HomePage: React.FC<HomePageProps> = ({ setActiveStep, isLoggedIn, onLoginR
     { id: '02', label: 'Cấu hình lọc', detail: 'Điều chỉnh trọng số + hard filter.' },
     { id: '03', label: 'Upload CV', detail: 'Kéo thả hàng loạt hồ sơ.' },
     { id: '04', label: 'Xem kết quả', detail: 'AI trả về bảng điểm & gợi ý phỏng vấn.' },
-  ];
-
-  const faqs = [
-    {
-      question: 'Quy trình hoạt động của Support HR AI diễn ra như thế nào?',
-      answer: 'Bạn chỉ cần hoàn tất 4 bước: nhập JD (có thể OCR), cấu hình trọng số và hard filter, tải CV hàng loạt, sau đó hệ thống AI sẽ chấm điểm và hiển thị dashboard phân tích.'
-    },
-    {
-      question: 'Thông tin của chúng tôi có được bảo mật không?',
-      answer: 'Dữ liệu JD và CV được mã hoá khi lưu trữ, chỉ đội ngũ được phân quyền mới truy cập được và toàn bộ file được xóa theo chính sách lưu trữ 30 ngày hoặc sớm hơn theo yêu cầu doanh nghiệp.'
-    },
-    {
-      question: 'Tôi có phải trả phí để sử dụng không?',
-      answer: 'Bản dùng thử hiện tại miễn phí cho tối đa 50 CV/chiến dịch. Các gói doanh nghiệp với SLA và tích hợp ATS sẽ có báo giá riêng — liên hệ chúng tôi để được tư vấn.'
-    },
-    {
-      question: 'Hệ thống có hỗ trợ gợi ý câu hỏi phỏng vấn tự động không?',
-      answer: 'Có, sau khi AI phân tích xong, bạn có thể mở module Interview Copilot để nhận bộ câu hỏi follow-up dựa trên điểm mạnh/yếu của từng ứng viên.'
-    },
-    {
-      question: 'Tôi có thể nhận hỗ trợ triển khai và đào tạo nội bộ chứ?',
-      answer: 'Chúng tôi cung cấp workshop onboarding, tài liệu hướng dẫn và nhóm hỗ trợ riêng trên Zalo/Slack để đảm bảo đội HR quen với quy trình mới chỉ sau 1-2 buổi.'
-    },
-    {
-      question: 'Hệ thống có thể tích hợp với phần mềm ATS hiện tại không?',
-      answer: 'Có, Support HR cung cấp Open API cho phép tích hợp dữ liệu hai chiều với các hệ thống quản trị tuyển dụng (ATS) phổ biến hoặc hệ thống nội bộ của doanh nghiệp.'
-    }
   ];
 
   return (
@@ -901,146 +872,9 @@ const HomePage: React.FC<HomePageProps> = ({ setActiveStep, isLoggedIn, onLoginR
           </div>
         </div>
 
-        <div id="contact" className="mt-10 sm:mt-20 relative rounded-[2.5rem] overflow-hidden border border-slate-800 bg-slate-900/40 backdrop-blur-xl">
-          {/* Animated Background Effects */}
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-cyan-500/5 to-purple-500/10 animate-pulse"></div>
-          <div className="absolute -top-24 -right-24 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl"></div>
-          <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl"></div>
-          
-          <div className="relative p-6 sm:p-16 text-center z-10">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-6">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <span className="text-xs font-bold tracking-widest text-emerald-300 uppercase">Sẵn sàng 24/7</span>
-            </div>
 
-            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight mb-6">
-              Sẵn sàng triển khai <br className="hidden sm:block" />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-cyan-400 to-purple-400">
-                tại doanh nghiệp bạn
-              </span>
-            </h2>
-            
-            <p className="text-lg text-slate-300 max-w-2xl mx-auto mb-10 leading-relaxed">
-              Đừng để quy trình thủ công kìm hãm sự phát triển. Nhận demo hệ thống, tài liệu triển khai và tư vấn tích hợp quy trình tuyển dụng ngay hôm nay.
-            </p>
-
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <a
-                href="tel:0899280108"
-                className="group relative h-12 sm:h-14 px-8 rounded-full bg-white text-slate-900 font-bold text-base flex items-center justify-center gap-3 shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:shadow-[0_0_60px_rgba(255,255,255,0.5)] hover:scale-105 transition-all duration-300 w-full sm:w-auto"
-              >
-                <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center group-hover:rotate-12 transition-transform">
-                  <i className="fa-solid fa-phone"></i>
-                </div>
-                <span>Liên hệ ngay</span>
-                <div className="absolute inset-0 rounded-full ring-2 ring-white/50 animate-ping opacity-20"></div>
-              </a>
-
-              <a
-                href="mailto:support@supporthr.vn"
-                className="group h-12 sm:h-14 px-8 rounded-full bg-slate-800/50 border border-slate-600 text-white font-semibold flex items-center justify-center gap-3 hover:bg-slate-800 hover:border-cyan-400/50 transition-all duration-300 w-full sm:w-auto"
-              >
-                <div className="w-8 h-8 rounded-full bg-slate-700 text-cyan-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <i className="fa-solid fa-envelope"></i>
-                </div>
-                <span>Gửi Email</span>
-              </a>
-
-              <div className="flex items-center gap-2 pl-2 sm:border-l border-slate-700/50 sm:ml-2">
-                <a
-                  href="https://www.facebook.com/profile.php?id=61577736765345&locale=vi_VN"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-12 h-12 rounded-full bg-slate-800/50 border border-slate-700 flex items-center justify-center text-blue-500 hover:bg-blue-600 hover:text-white hover:border-blue-500 transition-all duration-300"
-                  title="Facebook"
-                >
-                  <i className="fa-brands fa-facebook text-xl"></i>
-                </a>
-                <a
-                  href="https://www.linkedin.com/in/truong-minh-hoang-phuc-5ba70532b/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-12 h-12 rounded-full bg-slate-800/50 border border-slate-700 flex items-center justify-center text-sky-500 hover:bg-sky-600 hover:text-white hover:border-sky-500 transition-all duration-300"
-                  title="LinkedIn"
-                >
-                  <i className="fa-brands fa-linkedin text-xl"></i>
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div id="faq" className="mt-12 rounded-3xl border border-slate-800 bg-gradient-to-b from-slate-900/80 to-slate-950/80 p-8 sm:p-12 relative overflow-hidden">
-          {/* Decorative background */}
-          <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/10 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/10 blur-3xl rounded-full translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
-
-          <div className="text-center relative z-10 mb-12">
-            <p className="text-xs font-semibold tracking-[0.35em] text-cyan-200 uppercase">FAQ</p>
-            <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-white">Câu hỏi thường gặp</h2>
-            <p className="mt-4 text-slate-400 max-w-2xl mx-auto">
-              Giải đáp những thắc mắc phổ biến nhất về Support HR AI. Nếu bạn có câu hỏi khác, đừng ngần ngại liên hệ với chúng tôi.
-            </p>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2 relative z-10">
-            {faqs.map((faq, index) => {
-              const isOpen = openFaqIndex === index;
-              return (
-                <div 
-                  key={faq.question} 
-                  className={`group rounded-2xl border transition-all duration-300 ${
-                    isOpen 
-                      ? 'border-cyan-500/50 bg-slate-900/80 shadow-[0_0_30px_rgba(6,182,212,0.15)]' 
-                      : 'border-slate-800 bg-slate-900/40 hover:border-slate-700 hover:bg-slate-900/60'
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setOpenFaqIndex((prev) => (prev === index ? null : index))}
-                    className="w-full flex items-start justify-between gap-4 p-6 text-left"
-                    aria-expanded={isOpen}
-                  >
-                    <div className="flex gap-4">
-                      <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold transition-colors ${
-                        isOpen 
-                          ? 'bg-cyan-500 text-white' 
-                          : 'bg-slate-800 text-slate-400 group-hover:bg-slate-700 group-hover:text-slate-300'
-                      }`}>
-                        {index + 1}
-                      </span>
-                      <h3 className={`text-lg font-semibold transition-colors ${
-                        isOpen ? 'text-cyan-100' : 'text-slate-200 group-hover:text-white'
-                      }`}>
-                        {faq.question}
-                      </h3>
-                    </div>
-                    <span className={`shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180 text-cyan-400' : 'text-slate-500'}`}>
-                      <i className="fa-solid fa-chevron-down"></i>
-                    </span>
-                  </button>
-                  
-                  <div
-                    className={`grid transition-all duration-300 ease-in-out ${
-                      isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
-                    }`}
-                  >
-                    <div className="overflow-hidden px-6 pb-6 pt-0">
-                      <div className="h-px w-full bg-slate-800/50 mb-4"></div>
-                      <p className="text-slate-400 leading-relaxed">
-                        {faq.answer}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
       </section>
+      <ChatBubble />
     </div>
   );
 };
