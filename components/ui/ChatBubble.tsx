@@ -103,24 +103,6 @@ const ChatBubble: React.FC = () => {
                       </a>
                     </div>
                   </div>
-
-                  <div className="rounded-lg border border-slate-800 p-3 bg-slate-900/50">
-                    <p className="text-sm text-slate-200 font-semibold">Hỗ trợ triển khai</p>
-                    <ul className="mt-2 text-sm text-slate-300 list-disc list-inside space-y-1">
-                      <li>Workshop onboarding và tài liệu triển khai</li>
-                      <li>Tùy chỉnh tích hợp với ATS/ERP</li>
-                      <li>Quản lý tài khoản doanh nghiệp & Account Manager</li>
-                    </ul>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <a href="https://www.facebook.com/profile.php?id=61577736765345&locale=vi_VN" target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full bg-slate-800/50 border border-slate-700 flex items-center justify-center text-blue-500">
-                      <i className="fa-brands fa-facebook"></i>
-                    </a>
-                    <a href="https://www.linkedin.com/in/truong-minh-hoang-phuc-5ba70532b/" target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full bg-slate-800/50 border border-slate-700 flex items-center justify-center text-sky-500">
-                      <i className="fa-brands fa-linkedin"></i>
-                    </a>
-                  </div>
                 </div>
               )}
             </div>
