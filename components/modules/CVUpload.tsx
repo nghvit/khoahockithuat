@@ -188,13 +188,13 @@ const CVUpload: React.FC<CVUploadProps> = memo((props) => {
   }, [setCvFiles]);
 
   return (
-    <section id="module-upload" className="module-pane active w-full">
-      <div className="relative overflow-hidden bg-slate-950/50 border border-slate-800 rounded-2xl shadow-xl backdrop-blur-sm">
+    <section id="module-upload" className="module-pane active w-full min-h-screen flex flex-col">
+      <div className="relative overflow-hidden bg-slate-950/50 border border-slate-800 rounded-2xl shadow-xl backdrop-blur-sm flex flex-col flex-1 min-h-0">
         {/* Background decoration - reduced opacity/size */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl"></div>
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl"></div>
 
-        <div className="relative z-10 p-6 space-y-6">
+        <div className="relative z-10 p-6 space-y-6 flex-1 flex flex-col min-h-0">
           {/* Compact Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800/50 pb-4">
             <div>
@@ -223,7 +223,7 @@ const CVUpload: React.FC<CVUploadProps> = memo((props) => {
             </div>
           </div>
 
-          <div className="grid lg:grid-cols-12 gap-6">
+          <div className="grid lg:grid-cols-12 gap-6 flex-1 min-h-0">
             {/* Left Column: Upload & Actions (5 cols) */}
             <div className="lg:col-span-5 space-y-4">
               {/* Upload Zone */}
@@ -301,8 +301,8 @@ const CVUpload: React.FC<CVUploadProps> = memo((props) => {
             </div>
 
             {/* Right Column: File List (7 cols) */}
-            <div className="lg:col-span-7 flex flex-col bg-slate-900/30 rounded-xl border border-slate-800/50 overflow-hidden">
-               <div className="p-4 border-b border-slate-800/50 flex items-center justify-between bg-slate-900/50">
+            <div className="lg:col-span-7 flex flex-col bg-slate-900/30 rounded-xl border border-slate-800/50 overflow-hidden min-h-0">
+               <div className="p-4 border-b border-slate-800/50 flex items-center justify-between bg-slate-900/50 flex-shrink-0">
                   <h4 className="font-medium text-slate-200 text-sm">Danh sách hồ sơ</h4>
                   <div className="flex items-center gap-2">
                     <label className="cursor-pointer text-xs text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1 px-2 py-1 rounded hover:bg-cyan-500/10" title="Thêm từ máy tính">
@@ -327,7 +327,7 @@ const CVUpload: React.FC<CVUploadProps> = memo((props) => {
                   </div>
                </div>
                
-               <div className="overflow-y-auto p-2 custom-scrollbar max-h-[400px] min-h-[120px]">
+               <div className="overflow-y-auto p-2 custom-scrollbar flex-1 min-h-0">
                   {cvFiles.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-slate-500 space-y-3 opacity-60 py-8">
                        <i className="fa-regular fa-folder-open text-4xl"></i>
@@ -354,7 +354,7 @@ const CVUpload: React.FC<CVUploadProps> = memo((props) => {
                </div>
                
                {/* Footer Info */}
-               <div className="p-3 bg-slate-900/50 border-t border-slate-800/50 text-[10px] text-slate-500 text-center">
+               <div className="p-3 bg-slate-900/50 border-t border-slate-800/50 text-[10px] text-slate-500 text-center flex-shrink-0">
                   Mẹo: Nhóm CV theo vị trí để AI phân tích chính xác nhất.
                </div>
             </div>
