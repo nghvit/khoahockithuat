@@ -472,7 +472,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ onResetRequest, className, isLo
           userEmail={userEmail}
           onLoginRequest={onLoginRequest}
           isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
+          onClose={() => { }} // Sidebar stays permanent
           onShowSettings={() => setHistoryModalOpen(true)}
           onCollapsedChange={setSidebarCollapsed}
         />
