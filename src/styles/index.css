@@ -1,3 +1,5 @@
+@import './responsive/index.css';
+
 :root {
   --bg: #020617;
   --card: rgba(255, 255, 255, 0.06);
@@ -817,6 +819,3 @@ svg {
 .animate-scan-line {
   animation: scan-line 3s linear infinite;
 }
-
-/* ── Responsive partials ── */
-@import './responsive/index.css';
