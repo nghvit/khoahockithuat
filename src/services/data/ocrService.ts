@@ -5,7 +5,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { cvCache } from '../cache/cacheService';
 
 // Set the workerSrc for pdf.js. This is crucial for it to work from a CDN.
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@4.3.136/build/pdf.worker.min.mjs`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs`;
 
 const FILE_SIZE_LIMIT_MB = 15;
 const MIN_PDF_TEXT_LENGTH = 200; // Increased threshold to avoid unnecessary OCR
