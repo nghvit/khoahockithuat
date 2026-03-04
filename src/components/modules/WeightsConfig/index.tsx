@@ -100,7 +100,7 @@ const WeightsConfig: React.FC<WeightsConfigProps> = memo(({ weights, setWeights,
   }, [hardFilters]);
 
   // Fixed header position based on sidebar state (same pattern as JDInput)
-  const sidebarWidth = sidebarCollapsed ? 'md:left-20' : 'md:left-64';
+  const sidebarWidth = sidebarCollapsed ? 'md:left-[72px]' : 'md:left-64';
 
   return (
     <section id="module-weights" className="module-pane active w-full h-screen flex flex-col bg-[#0B1120]">
@@ -148,7 +148,7 @@ const WeightsConfig: React.FC<WeightsConfigProps> = memo(({ weights, setWeights,
 
       {/* ─── MAIN CONTENT AREA ─── */}
       <div className="flex-1 overflow-y-auto pt-[128px] md:pt-[72px] custom-scrollbar">
-        <div className="max-w-6xl mx-auto px-6 py-10">
+        <div className="w-full flex-1 flex flex-col min-h-0 border-x border-b border-slate-700/80 bg-slate-900 px-6 py-10">
           <div className="grid lg:grid-cols-12 gap-10 items-start">
 
             {/* Left Column: Content Area (7 cols) */}

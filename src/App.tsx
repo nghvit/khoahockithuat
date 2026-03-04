@@ -568,7 +568,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ onResetRequest, className, isLo
             <ProgressBar activeStep={activeStep} completedSteps={completedSteps} />
           </div>
         )}
-        <div className={`w-full overflow-x-hidden ${activeStep === 'weights' ? 'container-responsive' : (activeStep === 'home' || activeStep === 'jd') ? 'flex-1' : 'max-w-7xl px-4 sm:px-6 lg:px-8 mx-auto py-2'} ${(activeStep === 'home' || activeStep === 'jd') ? '' : 'py-2'} flex-1`}>
+        <div className={`w-full overflow-x-hidden ${(activeStep === 'home' || activeStep === 'jd' || activeStep === 'weights') ? 'flex-1' : 'max-w-7xl px-4 sm:px-6 lg:px-8 mx-auto py-2'} ${(activeStep === 'home' || activeStep === 'jd' || activeStep === 'weights') ? '' : 'py-2'} flex-1`}>
           <Suspense fallback={<div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div></div>}>
             <Routes>
               <Route path="/" element={<HomePage setActiveStep={setActiveStep} isLoggedIn={isLoggedIn} onLoginRequest={onLoginRequest} completedSteps={completedSteps} userAvatar={userAvatar} userName={userName} userEmail={userEmail} onLogout={handleLogout} />} />
