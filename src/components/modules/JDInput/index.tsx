@@ -271,10 +271,10 @@ const JDInput: React.FC<JDInputProps> = ({ jdText, setJdText, jobPosition, setJo
           </div>
 
           {/* Divider (desktop only) */}
-          <div className="jd-divider hidden md:block w-px bg-slate-700/50 my-3 flex-shrink-0"></div>
+          {/* Divider removed */}
 
           {/* CỘT PHẢI / ROW 2: 3 info fields */}
-          <div className="jd-col-right md:w-[320px] lg:w-[360px] flex-shrink-0 flex md:flex-col flex-row md:justify-center md:gap-2 md:px-4 md:py-2 md:bg-slate-800/40 md:border-l md:border-slate-700/50 
+          <div className="jd-col-right md:w-[320px] lg:w-[360px] flex-shrink-0 flex md:flex-col flex-row md:justify-center md:gap-2 md:px-4 md:py-2 md:bg-slate-800/40 
                           px-3 gap-2 overflow-x-auto items-center bg-slate-800/60 md:h-auto h-[38px] border-t border-slate-800 md:border-t-0">
 
             {/* Tên công ty — cyan */}
@@ -337,7 +337,7 @@ const JDInput: React.FC<JDInputProps> = ({ jdText, setJdText, jobPosition, setJo
           </div>
 
           {/* Status Badge — desktop only */}
-          <div className="jd-col-counter hidden md:flex items-center justify-center px-4 flex-shrink-0 border-l border-slate-700/40">
+          <div className="jd-col-counter hidden md:flex items-center justify-center px-8 flex-shrink-0 bg-cyan-900/10 transition-all duration-300">
             {jobPosition.trim().length > 3 && !isSummarizing && (
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[10px] text-emerald-400 font-bold uppercase tracking-wider animate-in fade-in zoom-in duration-300">
                 <i className="fa-solid fa-circle-check text-[9px]"></i>
