@@ -37,6 +37,14 @@ interface ScreenerPageProps {
   setActiveStep: (step: AppStep) => void;
   completedSteps: AppStep[];
   markStepAsCompleted: (step: AppStep) => void;
+  sidebarCollapsed?: boolean;
+  // JD Metadata
+  companyName: string;
+  setCompanyName: React.Dispatch<React.SetStateAction<string>>;
+  salary: string;
+  setSalary: React.Dispatch<React.SetStateAction<string>>;
+  requirementsSummary: string;
+  setRequirementsSummary: React.Dispatch<React.SetStateAction<string>>;
 }
 
 const ScreenerPage: React.FC<ScreenerPageProps> = (props) => {
@@ -52,6 +60,13 @@ const ScreenerPage: React.FC<ScreenerPageProps> = (props) => {
           setJobPosition={props.setJobPosition}
           hardFilters={props.hardFilters}
           setHardFilters={props.setHardFilters}
+          sidebarCollapsed={props.sidebarCollapsed}
+          companyName={props.companyName}
+          setCompanyName={props.setCompanyName}
+          salary={props.salary}
+          setSalary={props.setSalary}
+          requirementsSummary={props.requirementsSummary}
+          setRequirementsSummary={props.setRequirementsSummary}
           onComplete={() => {
             props.markStepAsCompleted('jd');
             props.setActiveStep('weights');

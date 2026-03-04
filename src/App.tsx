@@ -258,6 +258,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({ onResetRequest, className, isLo
   }, []);
   const [jdText, setJdText] = useState<string>('');
   const [jobPosition, setJobPosition] = useState<string>('');
+  const [companyName, setCompanyName] = useState<string>('');
+  const [salary, setSalary] = useState<string>('');
+  const [requirementsSummary, setRequirementsSummary] = useState<string>('');
   const [weights, setWeights] = useState<WeightCriteria>(initialWeights);
   const [hardFilters, setHardFilters] = useState<HardFilters>({
     location: '',
@@ -466,6 +469,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({ onResetRequest, className, isLo
     loadingMessage, setLoadingMessage,
     activeStep, setActiveStep,
     completedSteps, markStepAsCompleted,
+    sidebarCollapsed,
+    companyName, setCompanyName,
+    salary, setSalary,
+    requirementsSummary, setRequirementsSummary,
   };
 
   return (

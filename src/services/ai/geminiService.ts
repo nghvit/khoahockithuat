@@ -1852,6 +1852,70 @@ Trả về JSON với các trường đã trích xuất và chuyển đổi:`;
   }
 };
 
+/**
+ * Trích xuất metadata bổ sung từ JD: tên công ty, mức lương, tóm tắt yêu cầu chính.
+ */
+export interface JDMetadata {
+  companyName: string;
+  salary: string;
+  requirementsSummary: string;
+}
+
+export const extractJDMetadata = async (jdText: string): Promise<JDMetadata> => {
+  const empty: JDMetadata = { companyName: '', salary: '', requirementsSummary: '' };
+  if (!jdText || jdText.trim().length < 50) return empty;
+
+  const schema = {
+    type: Type.OBJECT,
+    properties: {
+      companyName: {
+        type: Type.STRING,
+        description: "Tên công ty tuyển dụng. Trả về chuỗi rỗng nếu không tìm thấy."
+      },
+      salary: {
+        type: Type.STRING,
+        description: "Mức lương hoặc khoảng lương đề xuất (VD: '15-25 triệu', 'Thỏa thuận', '$2000-$3000'). Trả về chuỗi rỗng nếu không đề cập."
+      },
+      requirementsSummary: {
+        type: Type.STRING,
+        description: "Tóm tắt ngắn gọn 1-2 câu về những yêu cầu chính của vị trí này (kỹ năng, kinh nghiệm, phẩm chất cốt lõi). Tối đa 120 ký tự."
+      }
+    },
+    required: ["companyName", "salary", "requirementsSummary"]
+  };
+
+  const prompt = `Bạn là AI đọc JD và trích xuất 3 thông tin nhanh sau đây:
+1. Tên công ty tuyển dụng (nếu có)
+2. Mức lương/khoảng lương (nếu JD đề cập)
+3. Tóm tắt 1-2 câu về yêu cầu chính của vị trí (dưới 120 ký tự, tiếng Việt)
+
+VĂN BẢN JD:
+---
+${jdText.slice(0, 3000)}
+---
+Trả về JSON.`;
+
+  try {
+    const response = await generateContentWithFallback(MODEL_NAME, prompt, {
+      responseMimeType: 'application/json',
+      responseSchema: schema,
+      temperature: 0.1,
+      topP: 0.3,
+      topK: 5,
+    });
+
+    const result = JSON.parse(response.text.trim().replace(/```json\s*|\s*```/g, ''));
+    return {
+      companyName: result.companyName?.trim() || '',
+      salary: result.salary?.trim() || '',
+      requirementsSummary: result.requirementsSummary?.trim() || '',
+    };
+  } catch (error) {
+    console.error("Lỗi khi trích xuất JD metadata:", error);
+    return empty;
+  }
+};
+
 type FileLookupMap = Map<string, File>;
 type FileTextMap = Map<string, string>;
 
