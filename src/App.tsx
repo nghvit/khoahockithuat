@@ -231,30 +231,15 @@ const MainLayout: React.FC<MainLayoutProps> = ({ onResetRequest, className, isLo
   }, []);
 
   const toggleSidebar = useCallback(() => {
-    setSidebarOpen(prev => {
-      const newState = !prev;
-      localStorage.setItem('sidebarOpen', JSON.stringify(newState));
-      return newState;
-    });
+    setSidebarOpen(true);
+    localStorage.setItem('sidebarOpen', JSON.stringify(true));
   }, []);
 
   // Theo dõi thay đổi kích thước màn hình để tự động đóng sidebar trên mobile
+  // Resize logic removed: sidebar stays open
   useEffect(() => {
-    const handleResize = () => {
-      const isMobile = window.innerWidth < 768;
-      if (isMobile) {
-        setSidebarOpen(false);
-      }
-    };
-
-    // Chỉ thêm listener nếu đang ở browser
-    if (typeof window !== 'undefined') {
-      window.addEventListener('resize', handleResize);
-
-      return () => {
-        window.removeEventListener('resize', handleResize);
-      };
-    }
+    // Keep it open
+    setSidebarOpen(true);
   }, []);
   const [jdText, setJdText] = useState<string>('');
   const [jobPosition, setJobPosition] = useState<string>('');

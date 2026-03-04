@@ -17,13 +17,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ activeStep, setActiveStep, completedSteps, onReset, onLogout, userEmail, onLoginRequest, isOpen = true, onClose, onShowSettings, onCollapsedChange }) => {
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('sidebarCollapsed');
-      return saved ? JSON.parse(saved) : false;
-    }
-    return false;
-  });
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Sync collapsed state on mount
   React.useEffect(() => {
@@ -32,26 +26,16 @@ const Sidebar: React.FC<SidebarProps> = ({ activeStep, setActiveStep, completedS
     }
   }, []);
 
+  // Collapse feature removed
   const toggleCollapse = () => {
-    setIsCollapsed((prev: boolean) => {
-      const newState = !prev;
-      localStorage.setItem('sidebarCollapsed', JSON.stringify(newState));
-      if (onCollapsedChange) {
-        onCollapsedChange(newState);
-      }
-      return newState;
-    });
+    setIsCollapsed(false);
   };
 
   // Hàm xử lý khi click vào menu item
   const handleStepClick = (step: AppStep) => {
     if (isStepEnabled(step)) {
       setActiveStep(step);
-
-      // Tự động đóng sidebar trên mobile sau khi chọn menu
-      if (typeof window !== 'undefined' && window.innerWidth < 768 && onClose) {
-        onClose();
-      }
+      // Removed auto-close: sidebar stays open
     }
   };
   const steps: { key: AppStep; icon: React.ComponentType<{ className?: string }>; label: string }[] = [
@@ -129,8 +113,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeStep, setActiveStep, completedS
       {/* Overlay cho mobile khi sidebar mở */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
-          onClick={onClose}
+          className="fixed inset-0 bg-black/30 z-40 md:hidden"
+        // Removed onClose: sidebar stays open
         />
       )}
 
@@ -143,19 +127,15 @@ const Sidebar: React.FC<SidebarProps> = ({ activeStep, setActiveStep, completedS
         {/* Compact Logo & Brand - Top */}
         <div className={`flex items-center gap-3 border-b border-slate-800/40 transition-all duration-300 ${isCollapsed ? 'md:justify-center md:px-3 px-4 py-5' : 'px-4 py-5 justify-start'}`}>
           {/* Logo Button */}
-          <button
-            onClick={isCollapsed ? toggleCollapse : undefined}
-            className={`flex items-center justify-center w-10 h-10 rounded-xl border border-slate-700/50 transition-all duration-300 overflow-hidden shadow-lg flex-shrink-0 ${isCollapsed ? 'md:w-10 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border-cyan-500/30 md:hover:border-cyan-400 md:hover:scale-105 md:cursor-pointer'
-              : 'bg-slate-800/50 md:cursor-default'
-              }`}
-            title={isCollapsed ? 'Mở sidebar' : ''}
+          <div
+            className={`flex items-center justify-center w-10 h-10 rounded-xl border border-slate-700/50 transition-all duration-300 overflow-hidden shadow-lg flex-shrink-0 bg-slate-800/50 md:cursor-default`}
           >
             <img
               src="/images/logos/logo.jpg"
               alt="Support HR Logo"
               className="w-full h-full object-contain"
             />
-          </button>
+          </div>
 
           {/* Brand Text - Only when expanded */}
           <div className={`flex-1 min-w-0 overflow-hidden transition-all duration-200 ${isCollapsed ? 'md:w-0 md:opacity-0 md:pointer-events-none' : 'opacity-100'}`}>
@@ -164,15 +144,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeStep, setActiveStep, completedS
           </div>
 
           {/* Collapse Toggle - Only on desktop when expanded */}
-          {!isCollapsed && (
-            <button
-              onClick={toggleCollapse}
-              className="hidden md:flex items-center justify-center w-8 h-8 bg-slate-800/30 border border-slate-700/50 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700/50 hover:border-slate-600 transition-all duration-300 flex-shrink-0"
-              title="Thu gọn"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-          )}
+          {/* Collapse Toggle removed */}
         </div>
 
         {/* New Campaign Button */}
@@ -398,9 +370,7 @@ const UserProfileSection: React.FC<{
                     onClick={() => {
                       setShowMenu(false);
                       onShowSettings();
-                      if (typeof window !== 'undefined' && window.innerWidth < 768 && onClose) {
-                        onClose();
-                      }
+                      // Removed auto-close: sidebar stays open
                     }}
                     className="w-full flex items-center gap-2 px-2 py-2 text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-lg transition-all group"
                   >
@@ -416,9 +386,7 @@ const UserProfileSection: React.FC<{
                   onClick={() => {
                     setShowMenu(false);
                     onLogout?.();
-                    if (typeof window !== 'undefined' && window.innerWidth < 768 && onClose) {
-                      onClose();
-                    }
+                    // Removed auto-close: sidebar stays open
                   }}
                   className="w-full flex items-center gap-2 px-2 py-2 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all group"
                 >
