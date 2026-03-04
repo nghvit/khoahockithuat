@@ -247,80 +247,88 @@ const JDInput: React.FC<JDInputProps> = ({ jdText, setJdText, jobPosition, setJo
   };
 
   // Tính toán vị trí left của fixed header bar dựa trên trạng thái sidebar
-  const sidebarWidth = sidebarCollapsed ? 'md:left-20' : 'md:left-64';
+  const sidebarWidth = sidebarCollapsed ? 'md:left-[72px]' : 'md:left-64';
 
   return (
     <section id="module-jd" className="module-pane active w-full h-screen flex flex-col bg-[#0B1120]" aria-labelledby="jd-title">
 
-      {/* ─── FIXED HEADER BAR: 2 cột — Chức danh | Thông tin JD ─── */}
-      <div className={`fixed top-14 md:top-0 left-0 right-0 z-30 ${sidebarWidth} transition-all duration-500 ease-[cubic-bezier(0.2,0,0,1)]`}>
-        <div className="bg-slate-900 h-[101px] flex items-stretch">
+      {/* ─── FIXED HEADER BAR: responsive 2-column (desktop) / 2-row (mobile) ─── */}
+      <div className={`fixed top-14 md:top-0 left-0 right-0 z-30 ${sidebarWidth} transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]`}>
+        {/* id for CSS responsive targeting */}
+        <div id="jdinput-header" className="bg-slate-900 border-b border-slate-800 flex items-stretch md:flex-row flex-col">
 
-          {/* CỘT TRÁI: Ô nhập chức danh công việc — full height */}
-          <div className="flex-1 flex items-center pr-3 bg-slate-900/60">
+          {/* CỘT TRÁI / ROW 1: Ô nhập chức danh công việc */}
+          <div className="jd-col-left flex-1 flex items-center bg-slate-900/60 md:h-[101px] h-[52px]">
             <input
               type="text"
               id="job-position"
               value={jobPosition}
               onChange={(e) => setJobPosition(e.target.value)}
-              className="w-full h-full text-base pl-5 pr-3 bg-transparent border-0 border-b-2 border-indigo-500/40 text-violet-100 placeholder-slate-500 focus:outline-none focus:border-indigo-400 transition-colors font-medium tracking-wide"
-              placeholder="Nhập chức danh công việc… VD: Senior Frontend Developer, Product Manager"
+              className="w-full h-full text-base pl-4 md:pl-5 pr-3 bg-transparent border-0 border-b-2 border-indigo-500/40 text-violet-100 placeholder-slate-500 focus:outline-none focus:border-indigo-400 transition-colors font-medium tracking-wide"
+              placeholder="Nhập chức danh… VD: Senior Frontend Developer"
               maxLength={100}
             />
           </div>
 
-          {/* Divider */}
-          <div className="w-px bg-slate-700/50 my-3 flex-shrink-0"></div>
+          {/* Divider (desktop only) */}
+          <div className="jd-divider hidden md:block w-px bg-slate-700/50 my-3 flex-shrink-0"></div>
 
-          {/* CỘT PHẢI: 3 info fields — editable sau khi AI điền */}
-          <div className="w-[340px] flex-shrink-0 flex flex-col justify-center gap-2 px-4 py-2 bg-slate-800/40 border-l border-slate-700/50">
+          {/* CỘT PHẢI / ROW 2: 3 info fields */}
+          <div className="jd-col-right md:w-[320px] lg:w-[360px] flex-shrink-0 flex md:flex-col flex-row md:justify-center md:gap-2 md:px-4 md:py-2 md:bg-slate-800/40 md:border-l md:border-slate-700/50 
+                          px-3 gap-2 overflow-x-auto items-center bg-slate-800/60 md:h-auto h-[38px] border-t border-slate-800 md:border-t-0">
 
             {/* Tên công ty — cyan */}
-            <div className="flex items-center gap-2 group">
-              <i className="fa-solid fa-building text-[10px] text-cyan-400 w-3 flex-shrink-0"></i>
+            <div className="jd-field flex items-center gap-1.5 flex-shrink-0 md:flex-shrink md:w-full">
+              <i className="fa-solid fa-building text-[10px] text-cyan-400 flex-shrink-0"></i>
               <input
                 type="text"
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
-                placeholder="Tên công ty (AI tự điền)"
-                className="flex-1 text-[12px] bg-transparent text-cyan-300 placeholder-slate-600 border-0 focus:outline-none truncate font-medium"
+                placeholder="Tên công ty"
+                className="min-w-[90px] md:min-w-0 md:flex-1 text-[11px] bg-transparent text-cyan-300 placeholder-slate-600 border-0 focus:outline-none truncate font-medium"
               />
               {companyName && (
-                <button onClick={() => setCompanyName('')} className="text-slate-600 hover:text-cyan-400 transition-colors flex-shrink-0">
+                <button onClick={() => setCompanyName('')} className="jd-field-clear text-slate-600 hover:text-cyan-400 transition-colors flex-shrink-0">
                   <i className="fa-solid fa-xmark text-[9px]"></i>
                 </button>
               )}
             </div>
 
+            {/* Separator mobile */}
+            <div className="md:hidden w-px h-3 bg-slate-700/60 flex-shrink-0"></div>
+
             {/* Mức lương — emerald */}
-            <div className="flex items-center gap-2 group">
-              <i className="fa-solid fa-money-bill-wave text-[10px] text-emerald-400 w-3 flex-shrink-0"></i>
+            <div className="jd-field flex items-center gap-1.5 flex-shrink-0 md:flex-shrink md:w-full">
+              <i className="fa-solid fa-money-bill-wave text-[10px] text-emerald-400 flex-shrink-0"></i>
               <input
                 type="text"
                 value={salary}
                 onChange={(e) => setSalary(e.target.value)}
-                placeholder="Mức lương (AI tự điền)"
-                className="flex-1 text-[12px] bg-transparent text-emerald-300 placeholder-slate-600 border-0 focus:outline-none truncate font-medium"
+                placeholder="Mức lương"
+                className="min-w-[80px] md:min-w-0 md:flex-1 text-[11px] bg-transparent text-emerald-300 placeholder-slate-600 border-0 focus:outline-none truncate font-medium"
               />
               {salary && (
-                <button onClick={() => setSalary('')} className="text-slate-600 hover:text-emerald-400 transition-colors flex-shrink-0">
+                <button onClick={() => setSalary('')} className="jd-field-clear text-slate-600 hover:text-emerald-400 transition-colors flex-shrink-0">
                   <i className="fa-solid fa-xmark text-[9px]"></i>
                 </button>
               )}
             </div>
 
+            {/* Separator mobile */}
+            <div className="md:hidden w-px h-3 bg-slate-700/60 flex-shrink-0"></div>
+
             {/* Tóm tắt yêu cầu — amber */}
-            <div className="flex items-start gap-2 group">
-              <i className="fa-solid fa-list-check text-[10px] text-amber-400 w-3 flex-shrink-0 mt-0.5"></i>
+            <div className="jd-field flex items-center gap-1.5 flex-shrink-0 md:flex-shrink md:w-full">
+              <i className="fa-solid fa-list-check text-[10px] text-amber-400 flex-shrink-0"></i>
               <input
                 type="text"
                 value={requirementsSummary}
                 onChange={(e) => setRequirementsSummary(e.target.value)}
-                placeholder="Tóm tắt yêu cầu (AI tự điền)"
-                className="flex-1 text-[12px] bg-transparent text-amber-200 placeholder-slate-600 border-0 focus:outline-none truncate font-medium"
+                placeholder="Yêu cầu chính"
+                className="min-w-[90px] md:min-w-0 md:flex-1 text-[11px] bg-transparent text-amber-200 placeholder-slate-600 border-0 focus:outline-none truncate font-medium"
               />
               {requirementsSummary && (
-                <button onClick={() => setRequirementsSummary('')} className="text-slate-600 hover:text-amber-400 transition-colors flex-shrink-0">
+                <button onClick={() => setRequirementsSummary('')} className="jd-field-clear text-slate-600 hover:text-amber-400 transition-colors flex-shrink-0">
                   <i className="fa-solid fa-xmark text-[9px]"></i>
                 </button>
               )}
@@ -328,8 +336,8 @@ const JDInput: React.FC<JDInputProps> = ({ jdText, setJdText, jobPosition, setJo
 
           </div>
 
-          {/* Counter + status phải */}
-          <div className="flex flex-col justify-center gap-1 pr-4 pl-2 flex-shrink-0 border-l border-slate-700/40">
+          {/* Counter + status — desktop only */}
+          <div className="jd-col-counter hidden md:flex flex-col justify-center gap-1 pr-4 pl-2 flex-shrink-0 border-l border-slate-700/40">
             <span className="text-[10px] text-slate-600 tabular-nums whitespace-nowrap">{jobPosition.length}/100</span>
             {jobPosition.trim().length > 3 && (
               <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-medium whitespace-nowrap">
@@ -349,8 +357,8 @@ const JDInput: React.FC<JDInputProps> = ({ jdText, setJdText, jobPosition, setJo
       </div>
 
       {/* ─── MAIN CONTENT AREA ─── */}
-      {/* pt = mobile-nav(56px) + header(56px) = 112px on mobile; header(56px) = pt-14 on desktop */}
-      <div className="flex-1 flex flex-col pt-[157px] md:pt-[101px] min-h-0">
+      {/* mobile: 56px nav + 52px title + 38px AI row = 146px; desktop: 101px header */}
+      <div className="jdinput-main-area flex-1 flex flex-col pt-[146px] md:pt-[101px] min-h-0">
 
         {/* Unified JD Card — textarea + footer hints + action buttons in one container */}
         <div className="flex-1 flex flex-col min-h-0 border-x border-b border-slate-700/80 bg-slate-900">

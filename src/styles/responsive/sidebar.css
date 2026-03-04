@@ -1,0 +1,37 @@
+/* ============================================================
+   responsive/sidebar.css
+   Sidebar width tokens used as CSS vars for consistency
+   ============================================================ */
+
+:root {
+    --sidebar-expanded: 256px;
+    --sidebar-collapsed: 72px;
+}
+
+/* Ensure the aside uses the same tokens */
+@media (min-width: 768px) {
+    #cv-sidebar.expanded {
+        width: var(--sidebar-expanded);
+    }
+
+    #cv-sidebar.collapsed {
+        width: var(--sidebar-collapsed);
+    }
+}
+
+/* Nav items center alignment when sidebar collapses */
+@media (min-width: 768px) {
+    #cv-sidebar.collapsed nav li button {
+        justify-content: center;
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    #cv-sidebar.collapsed nav li button .sidebar-label {
+        width: 0;
+        max-width: 0;
+        opacity: 0;
+        overflow: hidden;
+        margin-left: 0;
+    }
+}

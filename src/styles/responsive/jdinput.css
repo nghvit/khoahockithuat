@@ -1,0 +1,85 @@
+/* ============================================================
+   responsive/jdinput.css
+   JDInput header bar: 2-row layout on mobile
+   ============================================================ */
+
+/* ── Mobile: Stack header into 2 rows ── */
+@media (max-width: 767px) {
+
+    /* The fixed header container becomes 2-row */
+    #jdinput-header {
+        flex-direction: column !important;
+        height: auto !important;
+        min-height: unset !important;
+    }
+
+    /* Row 1: Job title input — full width, compact height */
+    #jdinput-header .jd-col-left {
+        width: 100% !important;
+        height: 52px !important;
+        border-right: none !important;
+        border-bottom: 1px solid rgba(100, 116, 139, 0.3) !important;
+        flex-shrink: 0 !important;
+    }
+
+    /* Row 2: 3 AI fields — horizontal scroll row */
+    #jdinput-header .jd-col-right {
+        width: 100% !important;
+        height: 40px !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 0 !important;
+        padding: 0 8px !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        scrollbar-width: none !important;
+        flex-shrink: 0 !important;
+        border-top: none !important;
+        background: rgba(15, 23, 42, 0.8) !important;
+    }
+
+    #jdinput-header .jd-col-right::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Each AI field becomes an inline pill on mobile */
+    #jdinput-header .jd-col-right .jd-field {
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 4px !important;
+        padding: 4px 10px !important;
+        white-space: nowrap !important;
+        border-radius: 999px !important;
+        background: rgba(30, 41, 59, 0.8) !important;
+        border: 1px solid rgba(255, 255, 255, 0.06) !important;
+        flex-shrink: 0 !important;
+        margin-right: 6px !important;
+    }
+
+    /* Hide the clear (×) button on mobile to save space */
+    #jdinput-header .jd-col-right .jd-field-clear {
+        display: none !important;
+    }
+
+    /* Counter / status column hidden on mobile */
+    #jdinput-header .jd-col-counter {
+        display: none !important;
+    }
+
+    /* Divider hidden on mobile */
+    #jdinput-header .jd-divider {
+        display: none !important;
+    }
+
+    /* Adjust main area top padding for 2-row header: 56px (mobile nav) + 52px + 40px = 148px */
+    .jdinput-main-area {
+        padding-top: 148px !important;
+    }
+}
+
+/* ── Tablet (768px–1023px): Keep 2-col but shrink right col ── */
+@media (min-width: 768px) and (max-width: 1023px) {
+    #jdinput-header .jd-col-right {
+        width: 260px !important;
+    }
+}

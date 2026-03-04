@@ -1,0 +1,33 @@
+/* ============================================================
+   responsive/layout.css
+   Main layout margin/width sync with sidebar widths:
+     - Expanded  : 256px (md:w-64)
+     - Collapsed : 72px  (md:w-[72px])
+   ============================================================ */
+
+/* Ensure sidebar collapsed state uses 72px consistently */
+@media (min-width: 768px) {
+    .main-content.with-sidebar {
+        margin-left: 256px;
+        width: calc(100vw - 256px);
+        max-width: calc(100vw - 256px);
+    }
+
+    .main-content.sidebar-collapsed {
+        margin-left: 72px;
+        width: calc(100vw - 72px);
+        max-width: calc(100vw - 72px);
+    }
+
+    .main-content.without-sidebar {
+        margin-left: 0;
+        width: 100vw;
+        max-width: 100vw;
+    }
+}
+
+/* Transition for smooth sidebar open/close */
+.main-content {
+    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}

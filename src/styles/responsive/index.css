@@ -1,0 +1,8 @@
+/* ============================================================
+   responsive/index.css
+   Entry point — imports all responsive partials
+   ============================================================ */
+
+@import './layout.css';
+@import './sidebar.css';
+@import './jdinput.css';

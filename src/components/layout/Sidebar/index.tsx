@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Home, FileText, Sliders, Upload, Sparkles, History, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { AppStep, HistoryEntry } from '../../../types';
 
