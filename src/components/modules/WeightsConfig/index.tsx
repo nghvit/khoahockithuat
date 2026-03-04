@@ -148,11 +148,11 @@ const WeightsConfig: React.FC<WeightsConfigProps> = memo(({ weights, setWeights,
 
       {/* ─── MAIN CONTENT AREA ─── */}
       <div className="flex-1 overflow-y-auto pt-[128px] md:pt-[72px] custom-scrollbar">
-        <div className="w-full flex-1 flex flex-col min-h-0 border-x border-b border-slate-700/80 bg-slate-900 px-6 py-10">
+        <div className="w-full flex-1 flex flex-col min-h-0 border-x border-b border-slate-700/80 bg-slate-900 px-6 pt-0 pb-10">
           <div className="grid lg:grid-cols-12 gap-10 items-start">
 
             {/* Left Column: Content Area (7 cols) */}
-            <div className="lg:col-span-12 xl:col-span-8 flex flex-col space-y-12">
+            <div className="lg:col-span-12 xl:col-span-8 flex flex-col space-y-8">
               <div className="flex flex-col">
                 <h4 className="text-xl font-bold text-white mb-2 flex items-center gap-3">
                   <span className="w-1.5 h-6 bg-cyan-500 rounded-full"></span>
