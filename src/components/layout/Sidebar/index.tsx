@@ -87,14 +87,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activeStep, setActiveStep, completedS
     };
 
     return (
-      <li className={`${isCollapsed ? 'md:px-1 px-2' : 'px-2'}`} key={step.key}>
+      <li className={`${isCollapsed ? 'md:px-2 px-2' : 'px-2'}`} key={step.key}>
         <button
-          className={`relative w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-300 group justify-center md:justify-start
+          className={`relative w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group
+            ${isCollapsed ? 'md:justify-center md:px-0' : 'justify-start'}
             ${isActive
-              ? 'bg-gradient-to-r from-cyan-500/20 to-emerald-500/20 text-cyan-100 shadow-lg shadow-cyan-500/10 md:from-cyan-500/15 md:to-transparent'
-              : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 md:hover:bg-slate-800/30'} 
-            ${!isEnabled ? 'opacity-40 cursor-not-allowed grayscale' : 'cursor-pointer'}
-            ${isCollapsed && 'md:justify-center'}`}
+              ? 'bg-gradient-to-r from-cyan-500/20 to-emerald-500/20 text-cyan-100 shadow-lg shadow-cyan-500/10'
+              : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'} 
+            ${!isEnabled ? 'opacity-40 cursor-not-allowed grayscale' : 'cursor-pointer'}`}
           disabled={!isEnabled}
           onClick={() => handleStepClick(step.key)}
           title={isCollapsed ? step.label : ''}
@@ -104,12 +104,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activeStep, setActiveStep, completedS
             <div className="hidden md:block absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-gradient-to-b from-cyan-400 to-emerald-400 rounded-r-lg shadow-lg"></div>
           )}
 
-          <div className={`flex items-center justify-center transition-all duration-300 ${getIconColor()} ${isActive ? 'scale-110 md:scale-100' : ''} flex-shrink-0`}>
+          <div className={`flex items-center justify-center transition-all duration-200 ${getIconColor()} ${isActive ? 'scale-110' : ''} flex-shrink-0`}>
             <Icon className="w-5 h-5" />
           </div>
 
-          <span className={`text-sm font-medium whitespace-nowrap transition-all duration-500 overflow-hidden ${isCollapsed ? 'max-w-0 opacity-0 md:max-w-0' : 'max-w-[200px] opacity-100'
-            }`}>
+          <span className={`text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden
+            ${isCollapsed ? 'md:w-0 md:max-w-0 md:opacity-0 md:ml-0' : 'max-w-[200px] opacity-100'}
+            `}>
             {step.label}
           </span>
 
@@ -135,12 +136,12 @@ const Sidebar: React.FC<SidebarProps> = ({ activeStep, setActiveStep, completedS
 
       <aside
         id="cv-sidebar"
-        className={`flex flex-col fixed top-0 left-0 h-screen bg-gradient-to-b from-slate-950 to-slate-900 border-r border-slate-800/60 shadow-2xl z-50 transition-all duration-500 ease-[cubic-bezier(0.2,0,0,1)] ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-          } ${isCollapsed ? 'md:w-20' : 'md:w-64'} w-64`}
+        className={`flex flex-col fixed top-0 left-0 h-screen bg-gradient-to-b from-slate-950 to-slate-900 border-r border-slate-800/60 shadow-2xl z-50 transition-[width,transform] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] will-change-[width,transform] ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+          } ${isCollapsed ? 'md:w-[72px]' : 'md:w-64'} w-64`}
         style={{ overflow: 'visible' }}
       >
         {/* Compact Logo & Brand - Top */}
-        <div className={`flex items-center justify-center gap-3 px-4 py-6 border-b border-slate-800/40 transition-all duration-300`}>
+        <div className={`flex items-center gap-3 border-b border-slate-800/40 transition-all duration-300 ${isCollapsed ? 'md:justify-center md:px-3 px-4 py-5' : 'px-4 py-5 justify-start'}`}>
           {/* Logo Button */}
           <button
             onClick={isCollapsed ? toggleCollapse : undefined}
@@ -157,12 +158,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeStep, setActiveStep, completedS
           </button>
 
           {/* Brand Text - Only when expanded */}
-          {!isCollapsed && (
-            <div className="flex-1 min-w-0">
-              <h1 className="text-white font-bold text-sm leading-tight">Support HR</h1>
-              <p className="text-[9px] text-slate-500 font-medium tracking-wider uppercase">AI Recruitment</p>
-            </div>
-          )}
+          <div className={`flex-1 min-w-0 overflow-hidden transition-all duration-200 ${isCollapsed ? 'md:w-0 md:opacity-0 md:pointer-events-none' : 'opacity-100'}`}>
+            <h1 className="text-white font-bold text-sm leading-tight whitespace-nowrap">Support HR</h1>
+            <p className="text-[9px] text-slate-500 font-medium tracking-wider uppercase whitespace-nowrap">AI Recruitment</p>
+          </div>
 
           {/* Collapse Toggle - Only on desktop when expanded */}
           {!isCollapsed && (
@@ -203,8 +202,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeStep, setActiveStep, completedS
         </div>
 
         {/* Navigation Steps */}
-        <nav className="flex-1 overflow-y-auto custom-scrollbar">
-          <ul className={`flex flex-col gap-1 ${isCollapsed ? 'md:px-1 px-1' : 'px-2'}`}>
+        <nav className="flex-1 overflow-y-auto custom-scrollbar py-2">
+          <ul className="flex flex-col gap-1">
             {steps.map(renderStep)}
           </ul>
         </nav>
