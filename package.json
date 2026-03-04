@@ -42,7 +42,7 @@
     "dotenv": "^16.4.5"
   },
   "engines": {
-    "node": ">=20 <21"
+    "node": ">=20"
   },
   "packageManager": "npm@10.9.0",
   "overrides": {
