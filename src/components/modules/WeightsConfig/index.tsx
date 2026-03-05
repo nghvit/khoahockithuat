@@ -147,12 +147,12 @@ const WeightsConfig: React.FC<WeightsConfigProps> = memo(({ weights, setWeights,
       </div>
 
       {/* ─── MAIN CONTENT AREA ─── */}
-      <div className="flex-1 overflow-y-auto pt-[128px] md:pt-[72px] custom-scrollbar">
-        <div className="w-full flex-1 flex flex-col min-h-0 border-x border-b border-slate-700/80 bg-slate-900 pb-10">
-          <div className="grid lg:grid-cols-12 items-start h-full">
+      <div className="flex-1 overflow-y-auto pt-[128px] md:pt-[72px] custom-scrollbar bg-slate-900">
+        <div className="max-w-7xl mx-auto w-full min-h-0 pb-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start h-full px-4 md:px-6">
 
-            {/* Left Column: Content Area (7 cols) */}
-            <div className="lg:col-span-12 xl:col-span-8 flex flex-col space-y-8 p-8">
+            {/* Left Column: Content Area (8 cols) */}
+            <div className="lg:col-span-8 flex flex-col space-y-8 py-8">
               <div className="flex flex-col">
                 <h4 className="text-xl font-bold text-white mb-2 flex items-center gap-3">
                   <span className="w-1.5 h-6 bg-cyan-500 rounded-full"></span>
@@ -187,7 +187,7 @@ const WeightsConfig: React.FC<WeightsConfigProps> = memo(({ weights, setWeights,
             </div>
 
             {/* Right Column: Controls & Info (4 cols) - Sticky on Desktop */}
-            <div className="lg:col-span-12 xl:col-span-4 lg:sticky lg:top-28 h-full border-l border-slate-800 p-8 bg-slate-900/40">
+            <div className="lg:col-span-4 lg:sticky lg:top-28 h-full py-8">
               <div className="flex flex-col gap-6">
 
                 {step === 1 ? (
