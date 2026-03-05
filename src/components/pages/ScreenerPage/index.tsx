@@ -97,6 +97,7 @@ const ScreenerPage: React.FC<ScreenerPageProps> = (props) => {
             weights={props.weights}
             hardFilters={props.hardFilters}
             setAnalysisResults={props.setAnalysisResults}
+            isLoading={props.isLoading}
             setIsLoading={props.setIsLoading}
             setLoadingMessage={props.setLoadingMessage}
             onAnalysisStart={() => {
@@ -104,6 +105,7 @@ const ScreenerPage: React.FC<ScreenerPageProps> = (props) => {
               props.setActiveStep('analysis');
             }}
             completedSteps={props.completedSteps}
+            sidebarCollapsed={props.sidebarCollapsed}
           />
         </Suspense>
       </div>
