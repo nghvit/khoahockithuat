@@ -548,7 +548,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ onResetRequest, className, isLo
       )}
 
       <main className={`main-content ml-0 ${!isHomeView ? 'mt-14 md:mt-0' : ''} ${!isHomeView ? (sidebarCollapsed ? 'md:ml-[72px]' : 'md:ml-64') : 'md:ml-0'} flex-1 flex flex-col min-h-0 overflow-x-hidden transition-all duration-300 ease-in-out ${!isHomeView ? (sidebarCollapsed ? 'md:w-[calc(100vw-72px)]' : 'md:w-[calc(100vw-16rem)]') : 'md:w-full'}`}>
-        {activeStep !== 'home' && activeStep !== 'jd' && (
+        {activeStep !== 'home' && activeStep !== 'jd' && activeStep !== 'upload' && activeStep !== 'analysis' && (
           <div className="pt-4">
             <ProgressBar activeStep={activeStep} completedSteps={completedSteps} />
           </div>

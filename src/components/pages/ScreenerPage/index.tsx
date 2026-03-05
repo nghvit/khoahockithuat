@@ -120,6 +120,9 @@ const ScreenerPage: React.FC<ScreenerPageProps> = (props) => {
             jdText={props.jdText}
             setActiveStep={props.setActiveStep}
             markStepAsCompleted={props.markStepAsCompleted}
+            activeStep={props.activeStep}
+            completedSteps={props.completedSteps}
+            sidebarCollapsed={props.sidebarCollapsed}
           />
         </Suspense>
       </div>

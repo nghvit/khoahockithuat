@@ -2,6 +2,7 @@ import React, { useState, useCallback, memo, useMemo } from 'react';
 import type { Candidate, HardFilters, WeightCriteria, AppStep } from '../../../types';
 import { analyzeCVs } from '../../../services/ai/geminiService';
 import { googleDriveService } from '../../../services/storage/googleDriveService';
+import ProgressBar from '../../ui/ProgressBar';
 
 interface CVUploadProps {
   cvFiles: File[];
@@ -21,7 +22,7 @@ interface CVUploadProps {
 const MAX_CV_PER_BATCH = 20;
 
 const CVUpload: React.FC<CVUploadProps> = memo((props) => {
-  const { cvFiles, setCvFiles, jdText, weights, hardFilters, setAnalysisResults, setIsLoading, isLoading, setLoadingMessage, onAnalysisStart, completedSteps, sidebarCollapsed = false } = props;
+  const { cvFiles, setCvFiles, jdText, weights, hardFilters, setAnalysisResults, setIsLoading, isLoading, setLoadingMessage, onAnalysisStart, completedSteps, activeStep = 'upload', sidebarCollapsed = false } = props;
   const [error, setError] = useState('');
   const [showUploadOptions, setShowUploadOptions] = useState(false);
 
@@ -138,42 +139,49 @@ const CVUpload: React.FC<CVUploadProps> = memo((props) => {
   }, [setCvFiles]);
 
   const sidebarWidth = sidebarCollapsed ? 'md:left-[72px]' : 'md:left-64';
+  const headerHeight = 'h-[101px] md:h-[148px]';
 
   return (
     <section id="module-upload" className="module-pane active w-full h-screen flex flex-col bg-[#0B1120]">
 
       {/* ─── FIXED HEADER BAR ─── */}
       <div className={`fixed top-14 md:top-0 left-0 right-0 z-30 ${sidebarWidth} transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]`}>
-        <div className="bg-slate-900 border-b border-slate-800 flex items-center h-[72px] md:h-[101px] px-6 gap-4">
-
-          {/* Step badge + Title */}
-          <div className="flex items-center gap-4 flex-1 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20 flex-shrink-0">
-              <span className="font-bold text-lg">3</span>
+        <div className={`bg-slate-900 border-b border-slate-800 flex flex-col ${headerHeight}`}>
+          <div className="flex-1 flex items-center px-6 gap-4">
+            {/* Step badge + Title */}
+            <div className="flex items-center gap-4 flex-1 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20 flex-shrink-0">
+                <span className="font-bold text-lg">3</span>
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-lg font-bold text-white leading-tight truncate">Tải lên CV</h2>
+                <p className="text-xs text-slate-400 leading-tight truncate">Tải lên tối đa {MAX_CV_PER_BATCH} hồ sơ ứng viên</p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <h2 className="text-lg font-bold text-white leading-tight truncate">Tải lên CV</h2>
-              <p className="text-xs text-slate-400 leading-tight truncate">Tải lên tối đa {MAX_CV_PER_BATCH} hồ sơ ứng viên</p>
+
+            {/* Status Badges */}
+            <div className="flex items-center gap-2 md:gap-3 flex-shrink-0 overflow-x-auto no-scrollbar py-1">
+              <div className={`whitespace-nowrap px-3 py-1.5 rounded-full border text-[10px] font-bold uppercase tracking-wider ${completedSteps.includes('jd') ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-amber-500/10 border-amber-500/30 text-amber-400'}`}>
+                JD: {completedSteps.includes('jd') ? 'Xong' : 'Chưa'}
+              </div>
+              <div className={`whitespace-nowrap px-3 py-1.5 rounded-full border text-[10px] font-bold uppercase tracking-wider ${completedSteps.includes('weights') ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-amber-500/10 border-amber-500/30 text-amber-400'}`}>
+                Trọng số: {completedSteps.includes('weights') ? 'Xong' : 'Chưa'}
+              </div>
+              <div className="whitespace-nowrap px-3 py-1.5 rounded-full border border-slate-700 bg-slate-800 text-[10px] text-slate-300 font-bold uppercase tracking-wider">
+                Đã chọn: <span className="text-white">{cvFiles.length}</span>
+              </div>
             </div>
           </div>
 
-          {/* Status Badges */}
-          <div className="flex items-center gap-2 md:gap-3 flex-shrink-0 overflow-x-auto no-scrollbar py-1">
-            <div className={`whitespace-nowrap px-3 py-1.5 rounded-full border text-[10px] font-bold uppercase tracking-wider ${completedSteps.includes('jd') ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-amber-500/10 border-amber-500/30 text-amber-400'}`}>
-              JD: {completedSteps.includes('jd') ? 'Xong' : 'Chưa'}
-            </div>
-            <div className={`whitespace-nowrap px-3 py-1.5 rounded-full border text-[10px] font-bold uppercase tracking-wider ${completedSteps.includes('weights') ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-amber-500/10 border-amber-500/30 text-amber-400'}`}>
-              Trọng số: {completedSteps.includes('weights') ? 'Xong' : 'Chưa'}
-            </div>
-            <div className="whitespace-nowrap px-3 py-1.5 rounded-full border border-slate-700 bg-slate-800 text-[10px] text-slate-300 font-bold uppercase tracking-wider">
-              Đã chọn: <span className="text-white">{cvFiles.length}</span>
-            </div>
+          {/* Integrated Progress Bar */}
+          <div className="px-6 pb-4">
+            <ProgressBar activeStep={activeStep as any} completedSteps={completedSteps} />
           </div>
         </div>
       </div>
 
       {/* ─── MAIN CONTENT AREA ─── */}
-      <div className="flex-1 flex flex-col pt-[128px] md:pt-[101px] min-h-0">
+      <div className="flex-1 flex flex-col pt-[156px] md:pt-[148px] min-h-0">
         <div className="flex-1 flex flex-col min-h-0 bg-slate-900 overflow-y-auto custom-scrollbar">
 
           {/* Upload Block */}

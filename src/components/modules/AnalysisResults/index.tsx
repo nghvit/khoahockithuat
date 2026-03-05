@@ -5,6 +5,7 @@ import type { Candidate, DetailedScore, AppStep } from '../../../types';
 import ExpandedContent from '../ExpandedContent';
 import ChatbotPanel from '../ChatbotPanel';
 import InterviewQuestionGenerator from '../InterviewQuestionGenerator';
+import ProgressBar from '../../ui/ProgressBar';
 // Removed manual history save functionality
 
 
@@ -17,6 +18,9 @@ interface AnalysisResultsProps {
   jdText: string;
   setActiveStep?: (step: AppStep) => void;
   markStepAsCompleted?: (step: AppStep) => void;
+  activeStep?: AppStep;
+  completedSteps?: AppStep[];
+  sidebarCollapsed?: boolean;
 }
 
 // --- Inlined Loader Component ---
@@ -144,7 +148,7 @@ const TableRow = React.memo<{
 });
 
 
-const AnalysisResults: React.FC<AnalysisResultsProps> = ({ isLoading, loadingMessage, results, jobPosition, locationRequirement, jdText, setActiveStep, markStepAsCompleted }) => {
+const AnalysisResults: React.FC<AnalysisResultsProps> = ({ isLoading, loadingMessage, results, jobPosition, locationRequirement, jdText, setActiveStep, markStepAsCompleted, activeStep = 'analysis', completedSteps = [], sidebarCollapsed = false }) => {
   const navigate = useNavigate();
   const [filter, setFilter] = useState('all');
   const [sortBy, setSortBy] = useState<'score' | 'jdFit'>('score');
@@ -322,11 +326,32 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({ isLoading, loadingMes
     return uniqueResults;
   }, [rankedAndSortedResults, filter, debouncedSearchTerm]);
 
-  if (isLoading) return <section id="module-analysis" className="module-pane active w-full h-full flex flex-col overflow-hidden"><Loader message={loadingMessage} /></section>;
+  const sidebarWidth = sidebarCollapsed ? 'md:left-[72px]' : 'md:left-64';
+  const headerHeight = 'h-[101px] md:h-[148px]';
+
+  if (isLoading) return <section id="module-analysis" className="module-pane active w-full h-full flex flex-col overflow-hidden bg-[#0B1120]"><Loader message={loadingMessage} /></section>;
 
   if (results.length === 0) return (
-    <section id="module-analysis" className="module-pane active w-full h-full flex flex-col overflow-hidden">
-      <div className="flex-1 flex flex-col items-center justify-center text-center py-16 md:py-20">
+    <section id="module-analysis" className="module-pane active w-full h-full flex flex-col overflow-hidden bg-[#0B1120]">
+      {/* Fixed Header for Empty State */}
+      <div className={`fixed top-14 md:top-0 left-0 right-0 z-30 ${sidebarWidth} transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]`}>
+        <div className={`bg-slate-900 border-b border-slate-800 flex flex-col ${headerHeight}`}>
+          <div className="flex-1 flex items-center px-6 gap-4">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg flex-shrink-0">
+              <i className="fa-solid fa-chart-pie text-lg"></i>
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-lg font-bold text-white leading-tight truncate">Kết quả phân tích</h2>
+              <p className="text-xs text-slate-400 leading-tight truncate">Chưa có dữ liệu để hiển thị</p>
+            </div>
+          </div>
+          <div className="px-6 pb-4">
+            <ProgressBar activeStep={activeStep as any} completedSteps={completedSteps} />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 flex flex-col items-center justify-center text-center py-16 md:py-20 pt-[156px] md:pt-[148px]">
         <div className="relative inline-block mb-6"><i className="fa-solid fa-chart-line text-5xl md:text-6xl text-slate-600 float-animation"></i><div className="absolute -top-2 -right-2 w-4 h-4 bg-blue-500 rounded-full pulse-animation"></div></div>
         <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-3">Sẵn Sàng Phân Tích</h3>
         <p className="text-slate-400 text-lg max-w-md mx-auto leading-relaxed">Kết quả AI sẽ xuất hiện ở đây sau khi bạn cung cấp mô tả công việc và các tệp CV.</p>
@@ -336,348 +361,386 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({ isLoading, loadingMes
 
   return (
     <>
-      <section id="module-analysis" className="module-pane active w-full px-6 md:px-10 lg:px-16 py-6"><div className="space-y-6">
-        {/* Summary header */}
-        <div className="grid gap-4 xl:grid-cols-[2fr,1fr]">
-          <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-5 sm:p-6 shadow-2xl shadow-black/30">
+      <section id="module-analysis" className="module-pane active w-full min-h-screen flex flex-col bg-[#0B1120]">
+        {/* ─── FIXED HEADER BAR ─── */}
+        <div className={`fixed top-14 md:top-0 left-0 right-0 z-30 ${sidebarWidth} transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]`}>
+          <div className={`bg-slate-900 border-b border-slate-800 flex flex-col ${headerHeight}`}>
+            <div className="flex-1 flex items-center px-6 gap-4">
+              {/* Step badge + Title */}
+              <div className="flex items-center gap-4 flex-1 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-purple-500/20 flex-shrink-0">
+                  <span className="font-bold text-lg">4</span>
+                </div>
+                <div className="min-w-0">
+                  <h2 className="text-lg font-bold text-white leading-tight truncate">{analysisData?.job?.position || 'Kết quả phân tích'}</h2>
+                  <p className="text-xs text-slate-400 leading-tight truncate">Phân tích chuyên sâu bởi AI</p>
+                </div>
+              </div>
+
+              {/* Quick Stats for Header */}
+              <div className="hidden lg:flex items-center gap-4 flex-shrink-0">
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Tổng ứng viên</span>
+                  <span className="text-sm font-bold text-white">{summaryData.total}</span>
+                </div>
+                <div className="w-px h-8 bg-slate-800"></div>
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] text-emerald-500 uppercase font-bold tracking-wider">Hạng A</span>
+                  <span className="text-sm font-bold text-emerald-400">{summaryData.countA}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Integrated Progress Bar */}
+            <div className="px-6 pb-4">
+              <ProgressBar activeStep={activeStep as any} completedSteps={completedSteps} />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex-1 flex flex-col pt-[156px] md:pt-[148px] px-6 md:px-10 lg:px-16 py-6 space-y-6">
+          {/* Summary header */}
+          <div className="grid gap-4 xl:grid-cols-[2fr,1fr]">
+            <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-5 sm:p-6 shadow-2xl shadow-black/30">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.35em] text-slate-500">Chiến dịch hiện tại</p>
+                  <h2 className="text-2xl lg:text-3xl font-semibold text-white mt-1">{analysisData.job.position}</h2>
+                  <p className="text-slate-400 text-sm mt-1">Phân tích lúc <span className="text-slate-200 font-semibold">{new Date(analysisData.timestamp).toLocaleString('vi-VN')}</span></p>
+                </div>
+                <div className="flex flex-wrap gap-3 text-xs text-slate-300">
+                  <span className="px-3 py-1.5 rounded-full border border-slate-800 bg-slate-900/70">Tổng CV: {summaryData.total}</span>
+                  <span className="px-3 py-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-200">Hạng A: {summaryData.countA}</span>
+                  <span className="px-3 py-1.5 rounded-full border border-blue-500/40 bg-blue-500/10 text-blue-200">Hạng B: {summaryData.countB}</span>
+                  <span className="px-3 py-1.5 rounded-full border border-rose-500/40 bg-rose-500/10 text-rose-200">Hạng C/Lỗi: {summaryData.countC}</span>
+                </div>
+              </div>
+            </div>
+            <div className="rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-5 flex flex-col gap-3 justify-center shadow-2xl shadow-cyan-900/30">
+              <button
+                onClick={() => setShowInterviewQuestions(true)}
+                className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-500 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-900/40 transition hover:translate-y-[-1px]"
+              >
+                <i className="fa-solid fa-question-circle"></i>
+                Gợi ý câu hỏi PV
+              </button>
+              <button
+                onClick={() => {
+                  if (setActiveStep) setActiveStep('dashboard');
+                  if (markStepAsCompleted) markStepAsCompleted('analysis');
+                  navigate('/detailed-analytics');
+                }}
+                className="w-full flex items-center justify-center gap-2 rounded-2xl border border-cyan-500/40 bg-slate-950/70 py-3 text-sm font-semibold text-cyan-200 transition hover:border-cyan-400 hover:text-white"
+              >
+                <i className="fa-solid fa-chart-line"></i>
+                Thống Kê Chi Tiết
+              </button>
+            </div>
+          </div>
+          {/* KPI cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            {[
+              { label: 'Tổng CV Phân Tích', value: summaryData.total, accent: 'from-slate-800 via-slate-900 to-slate-950', text: 'text-white' },
+              { label: 'Hạng A', value: summaryData.countA, accent: 'from-emerald-900/40 via-emerald-900/10 to-slate-950', text: 'text-emerald-300' },
+              { label: 'Hạng B', value: summaryData.countB, accent: 'from-blue-900/40 via-blue-900/10 to-slate-950', text: 'text-sky-300' },
+              { label: 'Hạng C/Lỗi', value: summaryData.countC, accent: 'from-rose-900/40 via-rose-900/10 to-slate-950', text: 'text-rose-300' }
+            ].map((card) => (
+              <div key={card.label} className={`rounded-3xl border border-white/5 bg-gradient-to-br ${card.accent} p-5 shadow-xl shadow-black/30`}>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{card.label}</p>
+                <p className={`text-4xl font-semibold mt-3 ${card.text}`}>{card.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Filter bar */}
+          <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-4 sm:p-5 shadow-inner shadow-black/30">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.35em] text-slate-500">Chiến dịch hiện tại</p>
-                <h2 className="text-2xl lg:text-3xl font-semibold text-white mt-1">{analysisData.job.position}</h2>
-                <p className="text-slate-400 text-sm mt-1">Phân tích lúc <span className="text-slate-200 font-semibold">{new Date(analysisData.timestamp).toLocaleString('vi-VN')}</span></p>
+              <div className="relative w-full lg:max-w-sm">
+                <i className="fa-solid fa-magnifying-glass text-slate-500 absolute left-4 top-1/2 -translate-y-1/2"></i>
+                <input
+                  type="text"
+                  placeholder="Tìm theo tên, chức danh..."
+                  value={searchTerm}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  className="w-full rounded-2xl border border-slate-800 bg-slate-900/80 pl-12 pr-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30"
+                />
               </div>
-              <div className="flex flex-wrap gap-3 text-xs text-slate-300">
-                <span className="px-3 py-1.5 rounded-full border border-slate-800 bg-slate-900/70">Tổng CV: {summaryData.total}</span>
-                <span className="px-3 py-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-200">Hạng A: {summaryData.countA}</span>
-                <span className="px-3 py-1.5 rounded-full border border-blue-500/40 bg-blue-500/10 text-blue-200">Hạng B: {summaryData.countB}</span>
-                <span className="px-3 py-1.5 rounded-full border border-rose-500/40 bg-rose-500/10 text-rose-200">Hạng C/Lỗi: {summaryData.countC}</span>
+              <div className="flex flex-wrap items-center gap-2">
+                {[
+                  { label: 'Tất cả', value: 'all', cls: 'bg-slate-900/70 text-slate-300' },
+                  { label: 'Hạng A', value: 'A', cls: 'bg-emerald-500/10 text-emerald-200' },
+                  { label: 'Hạng B', value: 'B', cls: 'bg-blue-500/10 text-blue-200' },
+                  { label: 'Hạng C', value: 'C', cls: 'bg-amber-500/10 text-amber-200' },
+                  { label: 'Lỗi', value: 'FAILED', cls: 'bg-rose-500/10 text-rose-200' }
+                ].map((chip) => (
+                  <button
+                    key={chip.value}
+                    onClick={() => setFilter(chip.value)}
+                    className={`px-4 py-1.5 rounded-full border transition ${filter === chip.value ? 'border-cyan-400 text-white shadow-cyan-500/20' : 'border-slate-800 text-slate-400 hover:border-cyan-500/30'} ${chip.cls}`}
+                  >
+                    {chip.label}
+                  </button>
+                ))}
               </div>
-            </div>
-          </div>
-          <div className="rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-5 flex flex-col gap-3 justify-center shadow-2xl shadow-cyan-900/30">
-            <button
-              onClick={() => setShowInterviewQuestions(true)}
-              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-500 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-900/40 transition hover:translate-y-[-1px]"
-            >
-              <i className="fa-solid fa-question-circle"></i>
-              Gợi ý câu hỏi PV
-            </button>
-            <button
-              onClick={() => {
-                if (setActiveStep) setActiveStep('dashboard');
-                if (markStepAsCompleted) markStepAsCompleted('analysis');
-                navigate('/detailed-analytics');
-              }}
-              className="w-full flex items-center justify-center gap-2 rounded-2xl border border-cyan-500/40 bg-slate-950/70 py-3 text-sm font-semibold text-cyan-200 transition hover:border-cyan-400 hover:text-white"
-            >
-              <i className="fa-solid fa-chart-line"></i>
-              Thống Kê Chi Tiết
-            </button>
-          </div>
-        </div>
-        {/* KPI cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          {[
-            { label: 'Tổng CV Phân Tích', value: summaryData.total, accent: 'from-slate-800 via-slate-900 to-slate-950', text: 'text-white' },
-            { label: 'Hạng A', value: summaryData.countA, accent: 'from-emerald-900/40 via-emerald-900/10 to-slate-950', text: 'text-emerald-300' },
-            { label: 'Hạng B', value: summaryData.countB, accent: 'from-blue-900/40 via-blue-900/10 to-slate-950', text: 'text-sky-300' },
-            { label: 'Hạng C/Lỗi', value: summaryData.countC, accent: 'from-rose-900/40 via-rose-900/10 to-slate-950', text: 'text-rose-300' }
-          ].map((card) => (
-            <div key={card.label} className={`rounded-3xl border border-white/5 bg-gradient-to-br ${card.accent} p-5 shadow-xl shadow-black/30`}>
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{card.label}</p>
-              <p className={`text-4xl font-semibold mt-3 ${card.text}`}>{card.value}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Filter bar */}
-        <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-4 sm:p-5 shadow-inner shadow-black/30">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="relative w-full lg:max-w-sm">
-              <i className="fa-solid fa-magnifying-glass text-slate-500 absolute left-4 top-1/2 -translate-y-1/2"></i>
-              <input
-                type="text"
-                placeholder="Tìm theo tên, chức danh..."
-                value={searchTerm}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                className="w-full rounded-2xl border border-slate-800 bg-slate-900/80 pl-12 pr-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30"
-              />
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {[
-                { label: 'Tất cả', value: 'all', cls: 'bg-slate-900/70 text-slate-300' },
-                { label: 'Hạng A', value: 'A', cls: 'bg-emerald-500/10 text-emerald-200' },
-                { label: 'Hạng B', value: 'B', cls: 'bg-blue-500/10 text-blue-200' },
-                { label: 'Hạng C', value: 'C', cls: 'bg-amber-500/10 text-amber-200' },
-                { label: 'Lỗi', value: 'FAILED', cls: 'bg-rose-500/10 text-rose-200' }
-              ].map((chip) => (
-                <button
-                  key={chip.value}
-                  onClick={() => setFilter(chip.value)}
-                  className={`px-4 py-1.5 rounded-full border transition ${filter === chip.value ? 'border-cyan-400 text-white shadow-cyan-500/20' : 'border-slate-800 text-slate-400 hover:border-cyan-500/30'} ${chip.cls}`}
-                >
-                  {chip.label}
-                </button>
-              ))}
-            </div>
-            <div className="flex items-center gap-3 text-sm text-slate-300">
-              <span className="text-slate-500">Sắp xếp</span>
-              <div className="relative">
-                <select
-                  id="sort-by"
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as 'score' | 'jdFit')}
-                  className="appearance-none rounded-full border border-slate-800 bg-slate-900/80 py-2 pl-4 pr-10 font-semibold text-white focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30"
-                >
-                  <option value="score">Điểm Tổng</option>
-                  <option value="jdFit">Phù hợp JD</option>
-                </select>
-                <i className="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500"></i>
+              <div className="flex items-center gap-3 text-sm text-slate-300">
+                <span className="text-slate-500">Sắp xếp</span>
+                <div className="relative">
+                  <select
+                    id="sort-by"
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as 'score' | 'jdFit')}
+                    className="appearance-none rounded-full border border-slate-800 bg-slate-900/80 py-2 pl-4 pr-10 font-semibold text-white focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30"
+                  >
+                    <option value="score">Điểm Tổng</option>
+                    <option value="jdFit">Phù hợp JD</option>
+                  </select>
+                  <i className="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500"></i>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Results table */}
-        <div className="rounded-3xl border border-slate-900 bg-slate-950/70 shadow-2xl shadow-black/50 overflow-hidden">
-          <div className="hidden md:block max-h-[70vh] overflow-y-auto results-container">
-            <table className="w-full text-sm">
-              <thead className="sticky top-0 z-10 bg-slate-900/90 backdrop-blur">
-                <tr className="text-slate-300">
-                  <th className="px-5 py-3 text-left">
-                    <input
-                      type="checkbox"
-                      checked={selectedCandidates.size === filteredResults.length && filteredResults.length > 0}
-                      onChange={handleSelectAll}
-                      className="rounded border-slate-600 bg-slate-900 text-cyan-400 focus:ring-cyan-500"
-                    />
-                  </th>
-                  <th className="px-5 py-3 text-left font-semibold">Họ tên</th>
-                  <th className="px-5 py-3 text-left font-semibold">Hạng</th>
-                  <th className="px-5 py-3 text-left font-semibold">Điểm</th>
-                  <th className="px-5 py-3 text-left font-semibold">Phù hợp JD</th>
-                  <th className="px-5 py-3 text-left font-semibold">File</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredResults.map((candidate, index) => {
-                  const isSelected = selectedCandidates.has(candidate.id);
-                  const grade = candidate.status === 'FAILED' ? 'FAILED' : (candidate.analysis?.['Hạng'] || 'C');
-                  const overallScore = candidate.status === 'FAILED' ? 0 : (candidate.analysis?.['Tổng điểm'] || 0);
-                  const jdFitScore = candidate.status === 'FAILED' ? 0 : parseInt(candidate.analysis?.['Chi tiết']?.find(i => i['Tiêu chí'].startsWith('Phù hợp JD'))?.['Điểm'].split('/')[0] || '0', 10);
-
-                  return (
-                    <React.Fragment key={candidate.id}>
-                      <tr
-                        className={`border-t border-slate-800/80 ${isSelected ? 'bg-cyan-500/5' : 'hover:bg-slate-900/60'} cursor-pointer transition-colors duration-150`}
-                        onClick={(e) => {
-                          if ((e.target as HTMLInputElement).type !== 'checkbox') {
-                            handleExpandCandidate(candidate.id);
-                          }
-                        }}
-                      >
-                        <td className="px-5 py-3">
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              handleSelectCandidate(candidate.id, index);
-                            }}
-                            className="rounded border-slate-600 bg-slate-900 text-cyan-400 focus:ring-cyan-500"
-                          />
-                        </td>
-                        <td className="px-5 py-3 font-medium text-slate-100">{candidate.candidateName || 'Chưa xác định'}</td>
-                        <td className="px-5 py-3">
-                          <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${candidate.status === 'FAILED'
-                            ? 'bg-slate-800 text-slate-400'
-                            : grade === 'A'
-                              ? 'bg-emerald-500/15 text-emerald-300'
-                              : grade === 'B'
-                                ? 'bg-sky-500/15 text-sky-300'
-                                : 'bg-rose-500/15 text-rose-300'
-                            }`}>
-                            {grade}
-                          </span>
-                        </td>
-                        <td className="px-5 py-3 text-slate-100">{overallScore}</td>
-                        <td className="px-5 py-3 text-slate-100">{jdFitScore}%</td>
-                        <td className="px-5 py-3 text-slate-200 flex items-center justify-between gap-3">
-                          <span className="truncate">{candidate.fileName || ''}</span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleExpandCandidate(candidate.id);
-                            }}
-                            className="text-cyan-400 hover:text-white"
-                          >
-                            <i className={`fa-solid fa-chevron-down transition-transform duration-300 ${expandedCandidate === candidate.id ? 'rotate-180' : ''}`}></i>
-                          </button>
-                        </td>
-                      </tr>
-                      {expandedCandidate === candidate.id && candidate.status !== 'FAILED' && candidate.analysis && (
-                        <tr className="expanded-content">
-                          <td colSpan={6} className="bg-slate-950 border-t border-slate-900/80">
-                            <ExpandedContent
-                              candidate={candidate}
-                              expandedCriteria={expandedCriteria}
-                              onToggleCriterion={handleToggleCriterion}
-                              jdText={jdText}
-                            />
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-                {filteredResults.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="px-5 py-12 text-center text-slate-500">
-                      <i className="fa-solid fa-ghost text-4xl mb-4"></i>
-                      <p>Không có ứng viên nào khớp với bộ lọc của bạn.</p>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile Card View */}
-          <div className="md:hidden max-h-[70vh] overflow-y-auto p-4 space-y-4 results-container">
-            {filteredResults.map((candidate, index) => {
-              const isSelected = selectedCandidates.has(candidate.id);
-              const grade = candidate.status === 'FAILED' ? 'FAILED' : (candidate.analysis?.['Hạng'] || 'C');
-              const overallScore = candidate.status === 'FAILED' ? 0 : (candidate.analysis?.['Tổng điểm'] || 0);
-              const jdFitScore = candidate.status === 'FAILED' ? 0 : parseInt(candidate.analysis?.['Chi tiết']?.find(i => i['Tiêu chí'].startsWith('Phù hợp JD'))?.['Điểm'].split('/')[0] || '0', 10);
-
-              return (
-                <div key={candidate.id} className={`rounded-xl border ${isSelected ? 'border-cyan-500/50 bg-cyan-500/5' : 'border-slate-800 bg-slate-900/40'} p-4 transition-all`}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
+          {/* Results table */}
+          <div className="rounded-3xl border border-slate-900 bg-slate-950/70 shadow-2xl shadow-black/50 overflow-hidden">
+            <div className="hidden md:block max-h-[70vh] overflow-y-auto results-container">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 z-10 bg-slate-900/90 backdrop-blur">
+                  <tr className="text-slate-300">
+                    <th className="px-5 py-3 text-left">
                       <input
                         type="checkbox"
-                        checked={isSelected}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          handleSelectCandidate(candidate.id, index);
-                        }}
-                        className="rounded border-slate-600 bg-slate-900 text-cyan-400 focus:ring-cyan-500 w-5 h-5"
+                        checked={selectedCandidates.size === filteredResults.length && filteredResults.length > 0}
+                        onChange={handleSelectAll}
+                        className="rounded border-slate-600 bg-slate-900 text-cyan-400 focus:ring-cyan-500"
                       />
-                      <div className="min-w-0">
-                        <h4 className="font-semibold text-slate-200 text-base truncate max-w-[180px]">{candidate.candidateName || 'Chưa xác định'}</h4>
-                        <p className="text-xs text-slate-500 mt-0.5 truncate max-w-[180px]">{candidate.jobTitle || 'Chưa có chức danh'}</p>
-                      </div>
-                    </div>
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold shrink-0 ${candidate.status === 'FAILED'
-                      ? 'bg-slate-800 text-slate-400'
-                      : grade === 'A'
-                        ? 'bg-emerald-500/15 text-emerald-300'
-                        : grade === 'B'
-                          ? 'bg-sky-500/15 text-sky-300'
-                          : 'bg-rose-500/15 text-rose-300'
-                      }`}>
-                      {grade}
-                    </span>
-                  </div>
+                    </th>
+                    <th className="px-5 py-3 text-left font-semibold">Họ tên</th>
+                    <th className="px-5 py-3 text-left font-semibold">Hạng</th>
+                    <th className="px-5 py-3 text-left font-semibold">Điểm</th>
+                    <th className="px-5 py-3 text-left font-semibold">Phù hợp JD</th>
+                    <th className="px-5 py-3 text-left font-semibold">File</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredResults.map((candidate, index) => {
+                    const isSelected = selectedCandidates.has(candidate.id);
+                    const grade = candidate.status === 'FAILED' ? 'FAILED' : (candidate.analysis?.['Hạng'] || 'C');
+                    const overallScore = candidate.status === 'FAILED' ? 0 : (candidate.analysis?.['Tổng điểm'] || 0);
+                    const jdFitScore = candidate.status === 'FAILED' ? 0 : parseInt(candidate.analysis?.['Chi tiết']?.find(i => i['Tiêu chí'].startsWith('Phù hợp JD'))?.['Điểm'].split('/')[0] || '0', 10);
 
-                  <div className="mt-4 grid grid-cols-2 gap-3">
-                    <div className="bg-slate-950/50 rounded-lg p-2 border border-slate-800/50">
-                      <p className="text-xs text-slate-500 mb-1">Điểm tổng</p>
-                      <p className="text-lg font-semibold text-slate-200">{overallScore}</p>
-                    </div>
-                    <div className="bg-slate-950/50 rounded-lg p-2 border border-slate-800/50">
-                      <p className="text-xs text-slate-500 mb-1">Phù hợp JD</p>
-                      <p className="text-lg font-semibold text-slate-200">{jdFitScore}%</p>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 flex items-center justify-between pt-3 border-t border-slate-800/50">
-                    <span className="text-xs text-slate-500 truncate max-w-[150px]">{candidate.fileName}</span>
-                    <button
-                      onClick={() => handleExpandCandidate(candidate.id)}
-                      className="flex items-center gap-1 text-xs font-medium text-cyan-400 hover:text-cyan-300 px-2 py-1 rounded hover:bg-cyan-500/10 transition-colors"
-                    >
-                      {expandedCandidate === candidate.id ? 'Thu gọn' : 'Chi tiết'}
-                      <i className={`fa-solid fa-chevron-down transition-transform duration-300 ${expandedCandidate === candidate.id ? 'rotate-180' : ''}`}></i>
-                    </button>
-                  </div>
-
-                  {expandedCandidate === candidate.id && candidate.status !== 'FAILED' && candidate.analysis && (
-                    <div className="mt-4 pt-4 border-t border-slate-800">
-                      <ExpandedContent
-                        candidate={candidate}
-                        expandedCriteria={expandedCriteria}
-                        onToggleCriterion={handleToggleCriterion}
-                        jdText={jdText}
-                      />
-                    </div>
+                    return (
+                      <React.Fragment key={candidate.id}>
+                        <tr
+                          className={`border-t border-slate-800/80 ${isSelected ? 'bg-cyan-500/5' : 'hover:bg-slate-900/60'} cursor-pointer transition-colors duration-150`}
+                          onClick={(e) => {
+                            if ((e.target as HTMLInputElement).type !== 'checkbox') {
+                              handleExpandCandidate(candidate.id);
+                            }
+                          }}
+                        >
+                          <td className="px-5 py-3">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                handleSelectCandidate(candidate.id, index);
+                              }}
+                              className="rounded border-slate-600 bg-slate-900 text-cyan-400 focus:ring-cyan-500"
+                            />
+                          </td>
+                          <td className="px-5 py-3 font-medium text-slate-100">{candidate.candidateName || 'Chưa xác định'}</td>
+                          <td className="px-5 py-3">
+                            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${candidate.status === 'FAILED'
+                              ? 'bg-slate-800 text-slate-400'
+                              : grade === 'A'
+                                ? 'bg-emerald-500/15 text-emerald-300'
+                                : grade === 'B'
+                                  ? 'bg-sky-500/15 text-sky-300'
+                                  : 'bg-rose-500/15 text-rose-300'
+                              }`}>
+                              {grade}
+                            </span>
+                          </td>
+                          <td className="px-5 py-3 text-slate-100">{overallScore}</td>
+                          <td className="px-5 py-3 text-slate-100">{jdFitScore}%</td>
+                          <td className="px-5 py-3 text-slate-200 flex items-center justify-between gap-3">
+                            <span className="truncate">{candidate.fileName || ''}</span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleExpandCandidate(candidate.id);
+                              }}
+                              className="text-cyan-400 hover:text-white"
+                            >
+                              <i className={`fa-solid fa-chevron-down transition-transform duration-300 ${expandedCandidate === candidate.id ? 'rotate-180' : ''}`}></i>
+                            </button>
+                          </td>
+                        </tr>
+                        {expandedCandidate === candidate.id && candidate.status !== 'FAILED' && candidate.analysis && (
+                          <tr className="expanded-content">
+                            <td colSpan={6} className="bg-slate-950 border-t border-slate-900/80">
+                              <ExpandedContent
+                                candidate={candidate}
+                                expandedCriteria={expandedCriteria}
+                                onToggleCriterion={handleToggleCriterion}
+                                jdText={jdText}
+                              />
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                  {filteredResults.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="px-5 py-12 text-center text-slate-500">
+                        <i className="fa-solid fa-ghost text-4xl mb-4"></i>
+                        <p>Không có ứng viên nào khớp với bộ lọc của bạn.</p>
+                      </td>
+                    </tr>
                   )}
-                </div>
-              );
-            })}
-            {filteredResults.length === 0 && (
-              <div className="text-center py-12 text-slate-500">
-                <i className="fa-solid fa-ghost text-4xl mb-4"></i>
-                <p>Không có ứng viên nào khớp với bộ lọc của bạn.</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {selectedCandidates.size > 0 && (
-          <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-slate-200">Ứng viên đã chọn ({selectedCandidates.size})</h3>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={exportSelectedToCSV}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-sm font-semibold rounded-full transition-colors"
-                >
-                  <i className="fa-solid fa-file-csv"></i>
-                  Xuất CSV đã chọn
-                </button>
-                <button
-                  onClick={handleClearAllSelected}
-                  className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-semibold rounded-full transition-colors"
-                >
-                  <i className="fa-solid fa-trash"></i>
-                  Xoá tất cả
-                </button>
-              </div>
+                </tbody>
+              </table>
             </div>
-            <div className="space-y-2 max-h-60 overflow-y-auto">
-              {filteredResults.filter(c => selectedCandidates.has(c.id)).map(candidate => {
+
+            {/* Mobile Card View */}
+            <div className="md:hidden max-h-[70vh] overflow-y-auto p-4 space-y-4 results-container">
+              {filteredResults.map((candidate, index) => {
+                const isSelected = selectedCandidates.has(candidate.id);
                 const grade = candidate.status === 'FAILED' ? 'FAILED' : (candidate.analysis?.['Hạng'] || 'C');
                 const overallScore = candidate.status === 'FAILED' ? 0 : (candidate.analysis?.['Tổng điểm'] || 0);
                 const jdFitScore = candidate.status === 'FAILED' ? 0 : parseInt(candidate.analysis?.['Chi tiết']?.find(i => i['Tiêu chí'].startsWith('Phù hợp JD'))?.['Điểm'].split('/')[0] || '0', 10);
 
                 return (
-                  <div key={candidate.id} className="flex items-center justify-between bg-slate-700/50 p-3 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-slate-400">{candidate.candidateName || 'Chưa xác định'}</span>
-                      <span className={`px-2 py-1 rounded text-xs font-semibold ${candidate.status === 'FAILED' ? 'bg-slate-600 text-slate-400' :
-                        grade === 'A' ? 'bg-emerald-600 text-emerald-400' :
-                          grade === 'B' ? 'bg-blue-600 text-blue-400' :
-                            'bg-red-600 text-red-400'
+                  <div key={candidate.id} className={`rounded-xl border ${isSelected ? 'border-cyan-500/50 bg-cyan-500/5' : 'border-slate-800 bg-slate-900/40'} p-4 transition-all`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            handleSelectCandidate(candidate.id, index);
+                          }}
+                          className="rounded border-slate-600 bg-slate-900 text-cyan-400 focus:ring-cyan-500 w-5 h-5"
+                        />
+                        <div className="min-w-0">
+                          <h4 className="font-semibold text-slate-200 text-base truncate max-w-[180px]">{candidate.candidateName || 'Chưa xác định'}</h4>
+                          <p className="text-xs text-slate-500 mt-0.5 truncate max-w-[180px]">{candidate.jobTitle || 'Chưa có chức danh'}</p>
+                        </div>
+                      </div>
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold shrink-0 ${candidate.status === 'FAILED'
+                        ? 'bg-slate-800 text-slate-400'
+                        : grade === 'A'
+                          ? 'bg-emerald-500/15 text-emerald-300'
+                          : grade === 'B'
+                            ? 'bg-sky-500/15 text-sky-300'
+                            : 'bg-rose-500/15 text-rose-300'
                         }`}>
                         {grade}
                       </span>
-                      <span className="text-sm text-slate-400">{overallScore} / {jdFitScore}%</span>
-                      <span className="text-sm text-slate-500">{candidate.jobTitle || ''}</span>
                     </div>
-                    <button
-                      onClick={() => handleRemoveSelected(candidate.id)}
-                      className="text-red-400 hover:text-red-300 text-sm underline"
-                    >
-                      Bỏ chọn
-                    </button>
+
+                    <div className="mt-4 grid grid-cols-2 gap-3">
+                      <div className="bg-slate-950/50 rounded-lg p-2 border border-slate-800/50">
+                        <p className="text-xs text-slate-500 mb-1">Điểm tổng</p>
+                        <p className="text-lg font-semibold text-slate-200">{overallScore}</p>
+                      </div>
+                      <div className="bg-slate-950/50 rounded-lg p-2 border border-slate-800/50">
+                        <p className="text-xs text-slate-500 mb-1">Phù hợp JD</p>
+                        <p className="text-lg font-semibold text-slate-200">{jdFitScore}%</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between pt-3 border-t border-slate-800/50">
+                      <span className="text-xs text-slate-500 truncate max-w-[150px]">{candidate.fileName}</span>
+                      <button
+                        onClick={() => handleExpandCandidate(candidate.id)}
+                        className="flex items-center gap-1 text-xs font-medium text-cyan-400 hover:text-cyan-300 px-2 py-1 rounded hover:bg-cyan-500/10 transition-colors"
+                      >
+                        {expandedCandidate === candidate.id ? 'Thu gọn' : 'Chi tiết'}
+                        <i className={`fa-solid fa-chevron-down transition-transform duration-300 ${expandedCandidate === candidate.id ? 'rotate-180' : ''}`}></i>
+                      </button>
+                    </div>
+
+                    {expandedCandidate === candidate.id && candidate.status !== 'FAILED' && candidate.analysis && (
+                      <div className="mt-4 pt-4 border-t border-slate-800">
+                        <ExpandedContent
+                          candidate={candidate}
+                          expandedCriteria={expandedCriteria}
+                          onToggleCriterion={handleToggleCriterion}
+                          jdText={jdText}
+                        />
+                      </div>
+                    )}
                   </div>
                 );
               })}
+              {filteredResults.length === 0 && (
+                <div className="text-center py-12 text-slate-500">
+                  <i className="fa-solid fa-ghost text-4xl mb-4"></i>
+                  <p>Không có ứng viên nào khớp với bộ lọc của bạn.</p>
+                </div>
+              )}
             </div>
           </div>
-        )}
-      </div></section>
+
+          {selectedCandidates.size > 0 && (
+            <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-slate-200">Ứng viên đã chọn ({selectedCandidates.size})</h3>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={exportSelectedToCSV}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-sm font-semibold rounded-full transition-colors"
+                  >
+                    <i className="fa-solid fa-file-csv"></i>
+                    Xuất CSV đã chọn
+                  </button>
+                  <button
+                    onClick={handleClearAllSelected}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-semibold rounded-full transition-colors"
+                  >
+                    <i className="fa-solid fa-trash"></i>
+                    Xoá tất cả
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {filteredResults.filter(c => selectedCandidates.has(c.id)).map(candidate => {
+                  const grade = candidate.status === 'FAILED' ? 'FAILED' : (candidate.analysis?.['Hạng'] || 'C');
+                  const overallScore = candidate.status === 'FAILED' ? 0 : (candidate.analysis?.['Tổng điểm'] || 0);
+                  const jdFitScore = candidate.status === 'FAILED' ? 0 : parseInt(candidate.analysis?.['Chi tiết']?.find(i => i['Tiêu chí'].startsWith('Phù hợp JD'))?.['Điểm'].split('/')[0] || '0', 10);
+
+                  return (
+                    <div key={candidate.id} className="flex items-center justify-between bg-slate-700/50 p-3 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm text-slate-400">{candidate.candidateName || 'Chưa xác định'}</span>
+                        <span className={`px-2 py-1 rounded text-xs font-semibold ${candidate.status === 'FAILED' ? 'bg-slate-600 text-slate-400' :
+                          grade === 'A' ? 'bg-emerald-600 text-emerald-400' :
+                            grade === 'B' ? 'bg-blue-600 text-blue-400' :
+                              'bg-red-600 text-red-400'
+                          }`}>
+                          {grade}
+                        </span>
+                        <span className="text-sm text-slate-400">{overallScore} / {jdFitScore}%</span>
+                        <span className="text-sm text-slate-500">{candidate.jobTitle || ''}</span>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveSelected(candidate.id)}
+                        className="text-red-400 hover:text-red-300 text-sm underline"
+                      >
+                        Bỏ chọn
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* Chatbot Button */}
       {analysisData && (
@@ -720,6 +783,5 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({ isLoading, loadingMes
     </>
   );
 };
-
 
 export default AnalysisResults;
