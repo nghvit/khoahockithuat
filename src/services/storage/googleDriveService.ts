@@ -20,10 +20,10 @@ export interface DriveFile {
 }
 
 class GoogleDriveService {
-  private developerKey: string = ''; 
+  private developerKey: string = '';
   private clientId: string = '1022447215307-67nghlm1hv26vbieho7ho52gqhagpfj7.apps.googleusercontent.com';
   private appId: string = '1022447215307';
-  
+
   private pickerApiLoaded: boolean = false;
   private oauthToken: string | null = null;
 
@@ -99,7 +99,7 @@ class GoogleDriveService {
     return new Promise(async (resolve, reject) => {
       try {
         await this.loadPicker();
-        
+
         if (!this.oauthToken) {
           await this.authenticate();
         }
@@ -141,7 +141,7 @@ class GoogleDriveService {
           });
 
         if (options.multiSelect) {
-           pickerBuilder.enableFeature(window.google.picker.Feature.MULTISELECT_ENABLED);
+          pickerBuilder.enableFeature(window.google.picker.Feature.MULTISELECT_ENABLED);
         }
 
         const picker = pickerBuilder.build();

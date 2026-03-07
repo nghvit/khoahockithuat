@@ -8,10 +8,12 @@ const WeightsConfig = lazy(() => import('../../modules/WeightsConfig'));
 const CVUpload = lazy(() => import('../../modules/CVUpload'));
 const AnalysisResults = lazy(() => import('../../modules/AnalysisResults'));
 
+import Loader from '../../ui/Loader';
+
 // Loading component
 const ModuleLoader = () => (
-  <div className="flex justify-center items-center h-32">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+  <div className="w-full flex justify-center py-12">
+    <Loader message="Đang tải dữ liệu..." />
   </div>
 );
 

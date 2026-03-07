@@ -1,5 +1,4 @@
-import type { WeightCriteria } from './types';
-
+import type { WeightCriteria } from '../types';
 export const initialWeights: WeightCriteria = {
   jdFit: {
     key: 'jdFit',
@@ -92,4 +91,4 @@ export const initialWeights: WeightCriteria = {
   },
 };
 
-export const MODEL_NAME = 'gemini-2.5-flash';
+export const MODEL_NAME = 'gemini-1.5-flash';
