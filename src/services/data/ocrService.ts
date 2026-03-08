@@ -11,7 +11,7 @@ const FILE_SIZE_LIMIT_MB = 15;
 const MIN_PDF_TEXT_LENGTH = 200; // Increased threshold to avoid unnecessary OCR
 const MAX_OCR_PAGES = 2; // Reduced from 3 to 2 pages for faster processing
 const CANVAS_SCALE = 1.5; // Reduced from 2.0 for better performance
-const GEMINI_VISION_MODEL = 'gemini-1.5-flash';
+const GEMINI_VISION_MODEL = 'gemini-2.5-flash-lite';
 
 const GOOGLE_CLOUD_VISION_API_KEY = (import.meta as any)?.env?.VITE_GOOGLE_CLOUD_VISION_API_KEY;
 
