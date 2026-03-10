@@ -136,3 +136,16 @@ export interface ChatMessage {
   content: string;
   suggestedCandidates?: Pick<Candidate, 'id' | 'candidateName' | 'analysis'>[];
 }
+
+// Type for JD + Weights Combo (Template)
+export interface JDTemplate {
+  id?: string;
+  uid: string;
+  name: string; // Tên gợi nhớ cho combo (VD: "React Dev - High Priority")
+  jdText: string;
+  jobPosition: string;
+  weights?: WeightCriteria;
+  hardFilters?: HardFilters;
+  createdAt: any;
+  updatedAt: any;
+}

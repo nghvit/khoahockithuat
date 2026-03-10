@@ -426,7 +426,7 @@ const HomePage: React.FC<HomePageProps> = ({
             <i className={`fa-solid fa-chevron-down text-[10px] text-slate-500 transition-all duration-300 ${activeMegaMenu === 'Support HR' ? 'rotate-180 text-cyan-400' : 'group-hover/brand:text-slate-300'}`}></i>
 
             {/* Support HR Mega Menu Dropdown */}
-            <div className={`absolute top-full left-0 mt-[26px] opacity-0 translate-y-2 pointer-events-none transition-all duration-300 z-50 ${activeMegaMenu === 'Support HR' ? 'opacity-100 translate-y-0 pointer-events-auto' : ''}`}>
+            <div className={`absolute top-full left-0 mt-4 opacity-0 translate-y-2 pointer-events-none transition-all duration-300 z-50 ${activeMegaMenu === 'Support HR' ? 'opacity-100 translate-y-0 pointer-events-auto' : ''}`}>
               <div className="w-[1000px] bg-indigo-950/95 backdrop-blur-3xl border border-white/10 rounded-[24px] p-2 shadow-[0_40px_100px_rgba(0,0,0,0.8)] ring-1 ring-white/10 flex gap-2">
                 {/* Left: Photos Section */}
                 <div className="w-[80%] flex gap-2 p-1">
@@ -527,7 +527,7 @@ const HomePage: React.FC<HomePageProps> = ({
                     </button>
 
                     {/* Mega Menu Dropdown */}
-                    <div className={`absolute top-full left-0 right-0 -mt-[24px] lg:fixed lg:left-0 lg:right-0 lg:flex lg:justify-center opacity-0 translate-y-2 pointer-events-none transition-all duration-300 z-50 ${activeMegaMenu === link.label ? 'opacity-100 translate-y-0 pointer-events-auto' : ''}`}>
+                    <div className={`absolute top-full left-0 right-0 mt-4 lg:fixed lg:left-0 lg:right-0 lg:flex lg:justify-center opacity-0 translate-y-2 pointer-events-none transition-all duration-300 z-50 ${activeMegaMenu === link.label ? 'opacity-100 translate-y-0 pointer-events-auto' : ''}`}>
                       <div className="w-full max-w-5xl mx-2 sm:mx-4 lg:mx-6 bg-indigo-950/95 backdrop-blur-3xl border border-white/10 rounded-[24px] p-1.5 shadow-[0_40px_100px_rgba(0,0,0,0.8)] ring-1 ring-white/10 flex">
                         {/* Left Highlight Card - More Compact */}
                         <div className="hidden md:flex w-[28%] p-5 bg-gradient-to-br from-slate-900/80 to-slate-950/80 rounded-[20px] m-1 flex-col justify-end min-h-[180px] border border-white/5 relative overflow-hidden group/highlight">
@@ -659,6 +659,8 @@ const HomePage: React.FC<HomePageProps> = ({
                             </div>
                           )}
                         </div>
+
+
                       </div>
                     </div>
                   </div>
@@ -709,95 +711,93 @@ const HomePage: React.FC<HomePageProps> = ({
                     </div>
                   </button>
 
-                  <div className={`absolute top-full left-0 right-0 -mt-[22px] lg:fixed lg:left-0 lg:right-0 lg:flex lg:justify-center ${showUserMenu ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-2 pointer-events-none'} transition-all duration-300 z-50`}>
-                    <div className="w-full max-w-7xl mx-2 sm:mx-[5%] lg:mx-6 bg-indigo-950/95 backdrop-blur-3xl border border-white/10 rounded-[28px] p-1.5 shadow-[0_40px_120px_rgba(0,0,0,0.9)] ring-1 ring-white/10 flex">
+                  <div className={`absolute top-full left-0 right-0 mt-4 lg:fixed lg:left-0 lg:right-0 lg:flex lg:justify-center ${showUserMenu ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-2 pointer-events-none'} transition-all duration-300 z-50`}>
+                    <div className="w-full max-w-7xl mx-2 sm:mx-[5%] lg:mx-6 bg-slate-900/95 backdrop-blur-3xl border border-white/10 rounded-[28px] p-1.5 shadow-[0_40px_120px_rgba(0,0,0,0.9)] ring-1 ring-white/10 flex">
                       {/* Left Highlight Card - User Profile */}
-                      <div className="w-[32%] p-5 bg-gradient-to-br from-slate-900/80 to-slate-950/80 rounded-[24px] m-1 flex flex-col justify-center border border-white/5 relative overflow-hidden group/profile min-h-[160px]">
-                        <div className="absolute -top-24 -left-24 w-48 h-48 bg-purple-500/10 blur-[80px] rounded-full group-hover/profile:bg-purple-500/20 transition-colors duration-700"></div>
+                      <div className="w-[32%] p-8 bg-gradient-to-br from-indigo-600/20 via-purple-600/10 to-slate-900/90 rounded-[24px] m-1 flex flex-col justify-center border border-white/10 relative overflow-hidden group/profile min-h-[200px] shadow-2xl shadow-indigo-500/10">
+                        <div className="absolute -top-24 -left-24 w-48 h-48 bg-indigo-500/20 blur-[80px] rounded-full group-hover/profile:bg-indigo-500/30 transition-colors duration-700"></div>
+                        <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-purple-500/20 blur-[80px] rounded-full group-hover/profile:bg-purple-500/30 transition-colors duration-700"></div>
+                        
                         <div className="relative z-10">
-                          <div className="flex items-start gap-4">
-                            {/* Avatar */}
-                            <div className="w-12 h-12 rounded-xl bg-indigo-500/15 flex items-center justify-center shadow-inner border border-white/10 overflow-hidden flex-shrink-0">
-                              <img
-                                src={userAvatar || "/images/logos/logo.jpg"}
-                                alt="Profile"
-                                className="w-full h-full object-cover"
-                              />
+                          <div className="flex flex-col items-center text-center space-y-4">
+                            {/* Avatar with glow */}
+                            <div className="relative group/avatar">
+                              <div className="absolute -inset-1.5 bg-gradient-to-tr from-cyan-400 to-purple-500 rounded-2xl blur opacity-40 group-hover/avatar:opacity-100 transition duration-500"></div>
+                              <div className="relative w-20 h-20 rounded-2xl bg-slate-950 flex items-center justify-center p-0.5 shadow-2xl border border-white/20 overflow-hidden">
+                                <img
+                                  src={userAvatar || "/images/logos/logo.jpg"}
+                                  alt="Profile"
+                                  className="w-full h-full object-cover rounded-[14px]"
+                                />
+                              </div>
                             </div>
 
-                            {/* User Info & Actions */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-2 mb-1">
-                                <h3 className="text-lg font-black text-white truncate tracking-tight">
-                                  {userName || (userEmail ? userEmail.split('@')[0] : 'User')}
-                                </h3>
+                            {/* User Info */}
+                            <div className="space-y-1">
+                              <h3 className="text-2xl font-black text-white tracking-tight leading-tight">
+                                {userName || (userEmail ? userEmail.split('@')[0] : 'User')}
+                              </h3>
+                              <p className="text-[11px] text-slate-400 font-bold uppercase tracking-[0.2em] opacity-80">{userEmail}</p>
+                            </div>
 
-                                <div className="flex items-center gap-2 flex-shrink-0">
-                                  {/* Status Icon */}
-                                  <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse" title="Đang hoạt động"></div>
-
-                                  {/* Logout Icon Button */}
-                                  <button
-                                    onClick={() => {
-                                      setShowUserMenu(false);
-                                      onLogout?.();
-                                    }}
-                                    className="w-7 h-7 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 hover:border-red-500/40 transition-all flex items-center justify-center group/logout"
-                                    title="Đăng xuất"
-                                  >
-                                    <i className="fa-solid fa-right-from-bracket text-[10px] group-hover/logout:translate-x-0.5 transition-transform"></i>
-                                  </button>
-                                </div>
-                              </div>
-                              <p className="text-[11px] text-slate-400 font-medium truncate opacity-80">{userEmail}</p>
+                            {/* Tag */}
+                            <div className="px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm text-[9px] font-black text-emerald-400 uppercase tracking-widest flex items-center gap-2">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+                              Active Member
                             </div>
                           </div>
                         </div>
                       </div>
 
                       {/* Right Column List - Account History & Stats */}
-                      <div className="flex-1 p-5 flex flex-col gap-4 overflow-hidden">
+                      <div className="flex-1 p-8 flex flex-col gap-6 overflow-hidden">
                         {/* Header Actions */}
                         <div className="flex items-center justify-between">
-                          <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                            <i className="fa-solid fa-clock-rotate-left"></i> Lịch sử và Thống kê
-                          </h4>
-                          <div className="flex items-center gap-2">
+                          <div className="space-y-1">
+                            <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em] flex items-center gap-2">
+                              <i className="fa-solid fa-clock-rotate-left"></i> Hoạt động gần đây
+                            </h4>
+                            <p className="text-xs text-slate-500 font-medium tracking-tight">Thống kê và lịch sử làm việc của bạn</p>
+                          </div>
+                          <div className="flex items-center gap-3">
                             <button
                               onClick={refreshHistoryData}
-                              className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 border border-white/5 transition-all flex items-center justify-center"
+                              className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 border border-white/5 transition-all flex items-center justify-center group/refresh shadow-xl"
                               title="Làm mới"
                             >
-                              <i className="fa-solid fa-rotate text-[10px]"></i>
+                              <i className="fa-solid fa-rotate text-sm group-hover/refresh:rotate-180 transition-transform duration-500"></i>
                             </button>
                             <button
                               onClick={handleClearHistory}
-                              className="text-[10px] text-red-400/70 font-bold uppercase tracking-widest hover:text-red-400 transition-colors"
+                              className="px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-[10px] font-black uppercase tracking-widest transition-all border border-red-500/10"
                             >
                               Xóa tất cả
                             </button>
                           </div>
                         </div>
 
-                        {/* Middle Row - Mini Stats */}
-                        <div className="grid grid-cols-3 gap-2.5">
-                          <div className="bg-slate-900/40 border border-white/5 rounded-xl p-2.5 flex flex-col items-center">
-                            <div className="text-[8px] text-slate-500 uppercase tracking-widest mb-0.5 font-bold">Cache</div>
-                            <div className="text-lg font-black text-white">{cacheStats.size}<span className="text-[9px] text-slate-500 ml-0.5">/100</span></div>
-                          </div>
-                          <div className="bg-slate-900/40 border border-white/5 rounded-xl p-2.5 flex flex-col items-center">
-                            <div className="text-[8px] text-slate-500 uppercase tracking-widest mb-0.5 font-bold">Hit Rate</div>
-                            <div className="text-lg font-black text-cyan-400">{cacheStats.hitRate.toFixed(0)}%</div>
-                          </div>
-                          <div className="bg-slate-900/40 border border-white/5 rounded-xl p-2.5 flex flex-col items-center">
-                            <div className="text-[8px] text-slate-500 uppercase tracking-widest mb-0.5 font-bold">Sessions</div>
-                            <div className="text-lg font-black text-emerald-400">{historyStats.totalSessions}</div>
-                          </div>
+                        {/* Middle Row - Mini Stats with hover effect */}
+                        <div className="grid grid-cols-3 gap-4">
+                          {[
+                            { label: 'Cache Entries', value: cacheStats.size, total: '/100', color: 'text-white', icon: 'fa-database' },
+                            { label: 'Hit Rate', value: `${cacheStats.hitRate.toFixed(0)}%`, color: 'text-cyan-400', icon: 'fa-bolt' },
+                            { label: 'Total Sessions', value: historyStats.totalSessions, color: 'text-emerald-400', icon: 'fa-chart-pie' }
+                          ].map((stat, idx) => (
+                            <div key={idx} className="bg-slate-800/40 hover:bg-slate-800/60 border border-white/5 hover:border-white/10 rounded-2xl p-4 flex flex-col items-center group/stat transition-all">
+                              <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-slate-500 mb-3 group-hover/stat:scale-110 transition-transform">
+                                <i className={`fa-solid ${stat.icon} text-sm`}></i>
+                              </div>
+                              <div className="text-[8px] text-slate-500 uppercase tracking-widest mb-1 font-black">{stat.label}</div>
+                              <div className={`text-2xl font-black ${stat.color} tracking-tighter`}>
+                                {stat.value}{stat.total && <span className="text-[10px] text-slate-500 ml-0.5">{stat.total}</span>}
+                              </div>
+                            </div>
+                          ))}
                         </div>
 
                         {/* Bottom - Recent Activity List */}
-                        <div className="flex-1 min-h-[100px] flex flex-col">
-                          <div className="flex-1 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                        <div className="flex-1 min-h-[120px] flex flex-col">
+                          <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
                             {recentHistory.length > 0 ? (
                               recentHistory.slice(0, 3).map((entry, idx) => (
                                 <div key={idx} className="flex items-center justify-between p-2.5 rounded-xl hover:bg-white/5 transition-all group/item cursor-default border border-transparent hover:border-white/5">

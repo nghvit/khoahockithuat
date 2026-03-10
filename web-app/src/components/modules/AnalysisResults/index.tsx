@@ -229,11 +229,16 @@ const CandidateDetailModal: React.FC<{
   onClose: () => void;
   jdText: string;
 }> = ({ candidate, onClose, jdText }) => {
+  const [currentPage, setCurrentPage] = useState(1);
+
   if (!candidate) return null;
 
   const overallScore = candidate.status === 'FAILED' ? 0 : (candidate.analysis?.['Tổng điểm'] || 0);
   const jdFitScore = candidate.status === 'FAILED' ? 0 : parseInt(candidate.analysis?.['Chi tiết']?.find(i => i['Tiêu chí'].startsWith('Phù hợp JD'))?.['Điểm'].split('/')[0] || '0', 10);
   const grade = candidate.status === 'FAILED' ? 'FAILED' : (candidate.analysis?.['Hạng'] || 'C');
+
+  const goToNext = () => setCurrentPage(2);
+  const goToBack = () => setCurrentPage(1);
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
@@ -244,9 +249,9 @@ const CandidateDetailModal: React.FC<{
       ></div>
 
       {/* Modal Content */}
-      <div className="relative w-full max-w-5xl max-h-[90vh] bg-[#111827] border border-[#1F2937] rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+      <div className="relative w-full max-w-5xl h-[85vh] bg-[#111827] border border-[#1F2937] rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-[#1F2937]">
+        <div className="flex items-center justify-between p-6 border-b border-[#1F2937] shrink-0">
           <div>
             <h2 className="text-2xl font-bold text-white">Candidate Analysis</h2>
             <p className="text-slate-400 text-sm mt-1">{candidate.candidateName}</p>
@@ -259,67 +264,144 @@ const CandidateDetailModal: React.FC<{
           </button>
         </div>
 
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr,2fr] gap-8">
-            {/* Left Column: Basic Info & Scores */}
-            <div className="space-y-6">
-              <div className="p-6 bg-[#0B1220] rounded-2xl border border-[#1F2937]">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="text-center flex-1 border-r border-[#1F2937]">
-                    <p className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Overall Score</p>
-                    <p className="text-4xl font-bold text-white mt-1">{overallScore}</p>
+        {/* Body Container with Pages */}
+        <div className="flex-1 relative overflow-hidden">
+          {/* Page 1: Summary */}
+          <div 
+            className={`absolute inset-0 transition-transform duration-500 ease-in-out p-6 overflow-y-auto custom-scrollbar ${
+              currentPage === 1 ? 'translate-x-0' : '-translate-x-full opacity-0'
+            }`}
+          >
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr,2fr] gap-8">
+              {/* Left Column: Basic Info & Recommendation */}
+              <div className="space-y-6">
+                <div className="p-6 bg-[#0B1220] rounded-2xl border border-[#1F2937]">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="text-center flex-1 border-r border-[#1F2937]">
+                      <p className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Overall Score</p>
+                      <p className="text-4xl font-bold text-white mt-1">{overallScore}</p>
+                    </div>
+                    <div className="text-center flex-1 border-r border-[#1F2937]">
+                      <p className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Rank</p>
+                      <span className={`inline-block mt-2 px-3 py-1 rounded-lg text-sm font-bold ${grade === 'A' ? 'bg-emerald-500/10 text-emerald-400' :
+                        grade === 'B' ? 'bg-blue-500/10 text-blue-400' :
+                          'bg-amber-500/10 text-amber-400'
+                        }`}>
+                        {grade}
+                      </span>
+                    </div>
+                    <div className="text-center flex-1">
+                      <p className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Match JD</p>
+                      <p className="text-2xl font-bold text-blue-400 mt-1">{jdFitScore}%</p>
+                    </div>
                   </div>
-                  <div className="text-center flex-1 border-r border-[#1F2937]">
-                    <p className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Rank</p>
-                    <span className={`inline-block mt-2 px-3 py-1 rounded-lg text-sm font-bold ${grade === 'A' ? 'bg-emerald-500/10 text-emerald-400' :
-                      grade === 'B' ? 'bg-blue-500/10 text-blue-400' :
-                        'bg-amber-500/10 text-amber-400'
-                      }`}>
-                      {grade}
-                    </span>
-                  </div>
-                  <div className="text-center flex-1">
-                    <p className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Match JD</p>
-                    <p className="text-2xl font-bold text-blue-400 mt-1">{jdFitScore}%</p>
+
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">Position</p>
+                      <p className="text-sm font-medium text-slate-200">{candidate.jobTitle || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">File Name</p>
+                      <p className="text-sm font-medium text-slate-200 truncate">{candidate.fileName}</p>
+                    </div>
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">Position</p>
-                    <p className="text-sm font-medium text-slate-200">{candidate.jobTitle || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">File Name</p>
-                    <p className="text-sm font-medium text-slate-200 truncate">{candidate.fileName}</p>
-                  </div>
+                <div className="p-5 bg-blue-500/5 rounded-2xl border border-blue-500/20">
+                  <h4 className="text-sm font-bold text-blue-400 flex items-center gap-2 mb-3">
+                    <i className="fa-solid fa-robot"></i>
+                    AI Recommendation
+                  </h4>
+                  <p className="text-sm text-slate-300 leading-relaxed italic">
+                    "{overallScore >= 70 ? 'Highly recommended candidate with strong alignment to project requirements.' :
+                      overallScore >= 50 ? 'Potential candidate with relevant skills, recommended for secondary review.' :
+                        'Limited alignment with current JD requirements.'}"
+                  </p>
                 </div>
               </div>
 
-              {/* Quick AI Recommendation */}
-              <div className="p-5 bg-blue-500/5 rounded-2xl border border-blue-500/20">
-                <h4 className="text-sm font-bold text-blue-400 flex items-center gap-2 mb-3">
-                  <i className="fa-solid fa-robot"></i>
-                  AI Recommendation
-                </h4>
-                <p className="text-sm text-slate-300 leading-relaxed italic">
-                  "{overallScore >= 70 ? 'Highly recommended candidate with strong alignment to project requirements.' :
-                    overallScore >= 50 ? 'Potential candidate with relevant skills, recommended for secondary review.' :
-                      'Limited alignment with current JD requirements.'}"
-                </p>
+              {/* Right Column: AI Summary Sections */}
+              <div className="space-y-6">
+                <ExpandedContent
+                  candidate={candidate}
+                  expandedCriteria={{}}
+                  onToggleCriterion={() => { }}
+                  jdText={jdText}
+                  viewMode="summary"
+                />
               </div>
             </div>
+          </div>
 
-            {/* Right Column: Detailed AI Analysis */}
-            <div className="space-y-6">
+          {/* Page 2: Detailed Analysis */}
+          <div 
+            className={`absolute inset-0 transition-transform duration-500 ease-in-out p-6 overflow-y-auto custom-scrollbar ${
+              currentPage === 2 ? 'translate-x-0' : 'translate-x-full opacity-0'
+            }`}
+          >
+            <div className="max-w-4xl mx-auto space-y-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-cyan-500/10 rounded-xl flex items-center justify-center text-cyan-400">
+                  <i className="fa-solid fa-magnifying-glass-chart text-xl"></i>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Detailed Analysis</h3>
+                  <p className="text-xs text-slate-500">Breakdown of scoring criteria and evidence in CV</p>
+                </div>
+              </div>
+              
               <ExpandedContent
                 candidate={candidate}
-                expandedCriteria={{ [candidate.id]: { 'Phù hợp JD (Job Fit)': true, 'Kinh nghiệm': true, 'Kỹ năng': true } }}
-                onToggleCriterion={() => { }}
+                expandedCriteria={{ [candidate.id]: { 'Phù hợp JD (Job Fit)': true } }}
+                onToggleCriterion={(cid, crit) => {
+                  // Local toggle hack for detail view if needed, or just use the parent's logic
+                  // For now, keep it simple as the user didn't ask for state persist here
+                }}
                 jdText={jdText}
+                viewMode="details"
               />
             </div>
+          </div>
+        </div>
+
+        {/* Footer Navigation */}
+        <div className="px-6 py-4 border-t border-[#1F2937] bg-[#111827] flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="flex gap-1.5">
+              <div className={`w-2 h-2 rounded-full transition-all duration-300 ${currentPage === 1 ? 'w-6 bg-blue-500' : 'bg-slate-700'}`}></div>
+              <div className={`w-2 h-2 rounded-full transition-all duration-300 ${currentPage === 2 ? 'w-6 bg-blue-500' : 'bg-slate-700'}`}></div>
+            </div>
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-2">Page {currentPage} / 2</span>
+          </div>
+
+          <div className="flex gap-3">
+            {currentPage === 2 ? (
+              <button
+                onClick={goToBack}
+                className="px-5 py-2 rounded-xl bg-[#1F2937] hover:bg-slate-700 text-slate-200 text-sm font-bold flex items-center gap-2 transition-all border border-slate-700"
+              >
+                <i className="fa-solid fa-arrow-left"></i>
+                Back
+              </button>
+            ) : null}
+
+            {currentPage === 1 ? (
+              <button
+                onClick={goToNext}
+                className="px-6 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold flex items-center gap-2 transition-all shadow-lg shadow-blue-900/20"
+              >
+                Next
+                <i className="fa-solid fa-arrow-right"></i>
+              </button>
+            ) : (
+              <button
+                onClick={onClose}
+                className="px-6 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold flex items-center gap-2 transition-all"
+              >
+                Done
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -47,6 +47,7 @@ interface ScreenerPageProps {
   setSalary: React.Dispatch<React.SetStateAction<string>>;
   requirementsSummary: string;
   setRequirementsSummary: React.Dispatch<React.SetStateAction<string>>;
+  uid: string;
 }
 
 const ScreenerPage: React.FC<ScreenerPageProps> = (props) => {
@@ -69,6 +70,8 @@ const ScreenerPage: React.FC<ScreenerPageProps> = (props) => {
           setSalary={props.setSalary}
           requirementsSummary={props.requirementsSummary}
           setRequirementsSummary={props.setRequirementsSummary}
+          uid={props.uid}
+          setWeights={props.setWeights}
           onComplete={() => {
             props.markStepAsCompleted('jd');
             props.setActiveStep('weights');

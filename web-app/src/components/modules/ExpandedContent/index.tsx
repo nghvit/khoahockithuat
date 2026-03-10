@@ -350,9 +350,16 @@ interface ExpandedContentProps {
   expandedCriteria: Record<string, Record<string, boolean>>;
   onToggleCriterion: (candidateId: string, criterion: string) => void;
   jdText: string;
+  viewMode?: 'summary' | 'details' | 'full';
 }
 
-const ExpandedContent: React.FC<ExpandedContentProps> = ({ candidate, expandedCriteria, onToggleCriterion, jdText }) => {
+const ExpandedContent: React.FC<ExpandedContentProps> = ({ 
+  candidate, 
+  expandedCriteria, 
+  onToggleCriterion, 
+  jdText,
+  viewMode = 'full'
+}) => {
   const sortedDetails = useMemo(() =>
     candidate.analysis?.['Chi tiết'] ?
       [...candidate.analysis['Chi tiết']].sort((a, b) =>
@@ -372,100 +379,104 @@ const ExpandedContent: React.FC<ExpandedContentProps> = ({ candidate, expandedCr
   const stability = '±0.0'; // placeholder (extend with history later)
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      <div className="bg-slate-800/60 border border-slate-700/70 rounded-xl p-5 flex flex-col md:flex-row gap-6">
-        <div className="flex-1 space-y-3">
-          <h4 className="text-lg font-semibold text-slate-100 flex items-center gap-2">
-            <i className="fa-solid fa-chart-pie text-cyan-400" />Tổng hợp đánh giá
-          </h4>
-          <p className="text-sm text-slate-400 leading-relaxed">
-            Ứng viên đạt <span className="font-semibold text-slate-200">{totalScore}/{maxTheoretical}</span> điểm – Mức phù hợp tổng thể: <span className="font-semibold text-cyan-400">{matchPercent}%</span>. Độ ổn định điểm: <span className="text-slate-300 font-medium">{stability}</span>
-          </p>
-          <div className="h-2 w-full bg-slate-700/50 rounded overflow-hidden">
-            <div className={`${matchPercent >= 75 ? 'bg-emerald-500' : matchPercent >= 55 ? 'bg-yellow-500' : 'bg-red-500'} h-full`} style={{ width: `${matchPercent}%` }} />
-          </div>
-          <p className="text-sm text-slate-300 font-medium">Nhận định: <span className="text-slate-200 font-normal">{recommendation}</span></p>
-        </div>
-        <div className="w-full md:w-60 bg-slate-900/60 rounded-lg p-4 border border-slate-700/70 flex flex-col gap-3 text-xs">
-          <div className="flex items-center justify-between text-slate-400"><span>Điểm</span><span className="font-mono text-slate-200">{totalScore}</span></div>
-          <div className="flex items-center justify-between text-slate-400"><span>Phù hợp JD</span><span className="font-mono text-cyan-400">{matchPercent}%</span></div>
-          <div className="flex items-center justify-between text-slate-400"><span>Ổn định</span><span className="font-mono text-slate-300">{stability}</span></div>
-          <div className="pt-1 border-t border-slate-700/50 text-slate-500 leading-relaxed">
-            Hiển thị trên thang chuẩn hóa 80 điểm (8 nhóm). Dùng cho đánh giá định hướng.
-          </div>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {candidate.analysis?.['Điểm mạnh CV'] && (
-          <div className="p-4 bg-green-900/30 border border-green-500/30 rounded-xl">
-            <p className="font-semibold text-green-300 mb-2 flex items-center gap-2 text-base">
-              <i className="fa-solid fa-wand-magic-sparkles"></i>Điểm mạnh CV
-            </p>
-            <ul className="list-disc list-inside text-sm text-green-400/90 space-y-1.5 pl-2">
-              {candidate.analysis['Điểm mạnh CV'].map((item, idx) => (
-                <li key={idx}>{item}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-        {candidate.analysis?.['Điểm yếu CV'] && (
-          <div className="p-4 bg-red-900/30 border border-red-500/30 rounded-xl">
-            <p className="font-semibold text-red-300 mb-2 flex items-center gap-2 text-base">
-              <i className="fa-solid fa-flag"></i>Điểm yếu CV
-            </p>
-            <ul className="list-disc list-inside text-sm text-red-400/90 space-y-1.5 pl-2">
-              {candidate.analysis['Điểm yếu CV'].map((item, idx) => (
-                <li key={idx}>{item}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-
-      {/* Education Validation Section */}
-      {candidate.analysis?.educationValidation && (
-        <div className="bg-slate-800/50 border border-slate-700/80 rounded-xl p-4">
-          <h4 className="text-lg font-bold text-slate-100 mb-4 flex items-center gap-2">
-            <i className="fa-solid fa-graduation-cap text-blue-400"></i>
-            Xác thực thông tin học vấn
-          </h4>
-
-          <div className="space-y-4">
-            {/* Standardized Education Info */}
-            <div className="bg-slate-900/70 p-3 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <h5 className="text-sm font-semibold text-slate-300">Thông tin học vấn chuẩn hóa</h5>
-                <span className={`px-2 py-1 rounded text-xs font-semibold ${candidate.analysis.educationValidation.validationNote === 'Hợp lệ'
-                    ? 'bg-green-600 text-green-100'
-                    : 'bg-red-600 text-red-100'
-                  }`}>
-                  {candidate.analysis.educationValidation.validationNote}
-                </span>
-              </div>
-              <p className="text-sm text-slate-400 font-mono bg-slate-800 p-2 rounded">
-                {candidate.analysis.educationValidation.standardizedEducation || 'Không có thông tin'}
+    <div className={`${viewMode === 'full' ? 'p-4 md:p-6' : ''} space-y-6`}>
+      {(viewMode === 'full' || viewMode === 'summary') && (
+        <>
+          <div className="bg-slate-800/60 border border-slate-700/70 rounded-xl p-5 flex flex-col md:flex-row gap-6">
+            <div className="flex-1 space-y-3">
+              <h4 className="text-lg font-semibold text-slate-100 flex items-center gap-2">
+                <i className="fa-solid fa-chart-pie text-cyan-400" />Tổng hợp đánh giá
+              </h4>
+              <p className="text-sm text-slate-400 leading-relaxed">
+                Ứng viên đạt <span className="font-semibold text-slate-200">{totalScore}/{maxTheoretical}</span> điểm – Mức phù hợp tổng thể: <span className="font-semibold text-cyan-400">{matchPercent}%</span>. Độ ổn định điểm: <span className="text-slate-300 font-medium">{stability}</span>
               </p>
+              <div className="h-2 w-full bg-slate-700/50 rounded overflow-hidden">
+                <div className={`${matchPercent >= 75 ? 'bg-emerald-500' : matchPercent >= 55 ? 'bg-yellow-500' : 'bg-red-500'} h-full`} style={{ width: `${matchPercent}%` }} />
+              </div>
+              <p className="text-sm text-slate-300 font-medium">Nhận định: <span className="text-slate-200 font-normal">{recommendation}</span></p>
             </div>
-
-            {/* Validation Warnings */}
-            {candidate.analysis.educationValidation.warnings && candidate.analysis.educationValidation.warnings.length > 0 && (
-              <div className="bg-yellow-900/30 border border-yellow-500/30 p-3 rounded-lg">
-                <h5 className="text-sm font-semibold text-yellow-300 mb-2 flex items-center gap-2">
-                  <i className="fa-solid fa-triangle-exclamation"></i>
-                  Cảnh báo xác thực
-                </h5>
-                <ul className="list-disc list-inside text-sm text-yellow-400/90 space-y-1 pl-2">
-                  {candidate.analysis.educationValidation.warnings.map((warning, idx) => (
-                    <li key={idx}>{warning}</li>
+            <div className="w-full md:w-60 bg-slate-900/60 rounded-lg p-4 border border-slate-700/70 flex flex-col gap-3 text-xs">
+              <div className="flex items-center justify-between text-slate-400"><span>Điểm</span><span className="font-mono text-slate-200">{totalScore}</span></div>
+              <div className="flex items-center justify-between text-slate-400"><span>Phù hợp JD</span><span className="font-mono text-cyan-400">{matchPercent}%</span></div>
+              <div className="flex items-center justify-between text-slate-400"><span>Ổn định</span><span className="font-mono text-slate-300">{stability}</span></div>
+              <div className="pt-1 border-t border-slate-700/50 text-slate-500 leading-relaxed">
+                Hiển thị trên thang chuẩn hóa 80 điểm (8 nhóm). Dùng cho đánh giá định hướng.
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {candidate.analysis?.['Điểm mạnh CV'] && (
+              <div className="p-4 bg-green-900/30 border border-green-500/30 rounded-xl">
+                <p className="font-semibold text-green-300 mb-2 flex items-center gap-2 text-base">
+                  <i className="fa-solid fa-wand-magic-sparkles"></i>Điểm mạnh CV
+                </p>
+                <ul className="list-disc list-inside text-sm text-green-400/90 space-y-1.5 pl-2">
+                  {candidate.analysis['Điểm mạnh CV'].map((item, idx) => (
+                    <li key={idx}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {candidate.analysis?.['Điểm yếu CV'] && (
+              <div className="p-4 bg-red-900/30 border border-red-500/30 rounded-xl">
+                <p className="font-semibold text-red-300 mb-2 flex items-center gap-2 text-base">
+                  <i className="fa-solid fa-flag"></i>Điểm yếu CV
+                </p>
+                <ul className="list-disc list-inside text-sm text-red-400/90 space-y-1.5 pl-2">
+                  {candidate.analysis['Điểm yếu CV'].map((item, idx) => (
+                    <li key={idx}>{item}</li>
                   ))}
                 </ul>
               </div>
             )}
           </div>
-        </div>
+
+          {/* Education Validation Section */}
+          {candidate.analysis?.educationValidation && (
+            <div className="bg-slate-800/50 border border-slate-700/80 rounded-xl p-4">
+              <h4 className="text-lg font-bold text-slate-100 mb-4 flex items-center gap-2">
+                <i className="fa-solid fa-graduation-cap text-blue-400"></i>
+                Xác thực thông tin học vấn
+              </h4>
+
+              <div className="space-y-4">
+                {/* Standardized Education Info */}
+                <div className="bg-slate-900/70 p-3 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <h5 className="text-sm font-semibold text-slate-300">Thông tin học vấn chuẩn hóa</h5>
+                    <span className={`px-2 py-1 rounded text-xs font-semibold ${candidate.analysis.educationValidation.validationNote === 'Hợp lệ'
+                        ? 'bg-green-600 text-green-100'
+                        : 'bg-red-600 text-red-100'
+                      }`}>
+                      {candidate.analysis.educationValidation.validationNote}
+                    </span>
+                  </div>
+                  <p className="text-sm text-slate-400 font-mono bg-slate-800 p-2 rounded">
+                    {candidate.analysis.educationValidation.standardizedEducation || 'Không có thông tin'}
+                  </p>
+                </div>
+
+                {/* Validation Warnings */}
+                {candidate.analysis.educationValidation.warnings && candidate.analysis.educationValidation.warnings.length > 0 && (
+                  <div className="bg-yellow-900/30 border border-yellow-500/30 p-3 rounded-lg">
+                    <h5 className="text-sm font-semibold text-yellow-300 mb-2 flex items-center gap-2">
+                      <i className="fa-solid fa-triangle-exclamation"></i>
+                      Cảnh báo xác thực
+                    </h5>
+                    <ul className="list-disc list-inside text-sm text-yellow-400/90 space-y-1 pl-2">
+                      {candidate.analysis.educationValidation.warnings.map((warning, idx) => (
+                        <li key={idx}>{warning}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
-      <div>
+      {(viewMode === 'full' || viewMode === 'details') && (
         <div className="space-y-3">
           {sortedDetails.map((item) => (
             <CriterionAccordion
@@ -477,7 +488,7 @@ const ExpandedContent: React.FC<ExpandedContentProps> = ({ candidate, expandedCr
             />
           ))}
         </div>
-      </div>
+      )}
     </div>
   );
 };

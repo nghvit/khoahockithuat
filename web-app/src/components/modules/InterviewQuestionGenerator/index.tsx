@@ -154,203 +154,187 @@ const InterviewQuestionGenerator: React.FC<InterviewQuestionGeneratorProps> = ({
     .sort((a, b) => (b.analysis?.['Tổng điểm'] || 0) - (a.analysis?.['Tổng điểm'] || 0));
 
   return (
-    <div className="bg-[#0B1120] border border-slate-800 rounded-2xl shadow-2xl max-w-4xl mx-auto">
+    <div className="bg-[#0B1120] border border-slate-800 rounded-2xl shadow-2xl w-full max-w-6xl mx-auto flex flex-col overflow-hidden h-[85vh]">
       {/* Header */}
-      <div className="p-6 border-b border-slate-800 bg-slate-900/50">
-        <div className="flex items-center justify-between">
+      <div 
+        className="p-6 border-b border-slate-800 shrink-0 relative"
+        style={{
+          background: 'linear-gradient(135deg, #0f172a 0%, #0b1220 40%, #020617 100%)',
+          transform: 'translateZ(0)',
+        }}
+      >
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]"></div>
+        <div className="flex items-center justify-between relative z-10">
           <div>
             <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-              <i className="fa-solid fa-question-circle text-purple-400"></i>
+              <i className="fa-solid fa-wand-magic-sparkles text-purple-400"></i>
               Gợi ý Câu hỏi Phỏng vấn AI
             </h2>
-            <p className="text-slate-300 mt-2">
+            <p className="text-slate-400 mt-1 text-sm font-medium">
               Tạo câu hỏi phỏng vấn thông minh dựa trên JD và dữ liệu lọc CV
             </p>
           </div>
           {onClose && (
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-white transition-colors p-2"
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-700 transition-all border border-slate-700/50"
             >
-              <i className="fa-solid fa-times text-xl"></i>
+              <i className="fa-solid fa-times text-lg"></i>
             </button>
           )}
         </div>
       </div>
 
-      {/* Content */}
-      <div className="p-6">
-        {/* Thông tin tổng quan */}
-        <div className="bg-slate-900/50 rounded-xl p-4 mb-6 border border-slate-800">
-          <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
-            <i className="fa-solid fa-chart-bar text-cyan-400"></i>
-            Tổng quan dữ liệu lọc CV
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-            <div className="bg-slate-950/50 rounded-lg p-3 border border-slate-800">
-              <div className="text-slate-400">Vị trí tuyển dụng</div>
-              <div className="text-white font-semibold">{analysisStats.jobPosition}</div>
-            </div>
-            <div className="bg-slate-950/50 rounded-lg p-3 border border-slate-800">
-              <div className="text-slate-400">Tổng ứng viên</div>
-              <div className="text-white font-semibold">{analysisStats.totalCandidates}</div>
-            </div>
-            <div className="bg-slate-950/50 rounded-lg p-3 border border-slate-800">
-              <div className="text-slate-400">Ứng viên hạng A</div>
-              <div className="text-white font-semibold">{analysisStats.topCandidates.length}</div>
+      {/* Content Area - 2 Panels */}
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+        
+        {/* Left Panel: Question Generator */}
+        <div className="w-full lg:w-[45%] p-6 overflow-y-auto custom-scrollbar border-b lg:border-b-0 lg:border-r border-slate-800/60 flex flex-col">
+          {/* Thông tin tổng quan */}
+          <div className="space-y-4 mb-8">
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+              <i className="fa-solid fa-database text-cyan-500/80"></i>
+              Tổng quan dữ liệu lọc CV
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-slate-900/40 rounded-xl p-3 border border-slate-800/60 hover:border-slate-700 transition-colors">
+                <div className="text-[10px] text-slate-500 font-bold uppercase mb-1">Vị trí</div>
+                <div className="text-sm text-slate-200 font-semibold truncate">{analysisStats.jobPosition}</div>
+              </div>
+              <div className="bg-slate-900/40 rounded-xl p-3 border border-slate-800/60 hover:border-slate-700 transition-colors">
+                <div className="text-[10px] text-slate-500 font-bold uppercase mb-1">Số lượng CV</div>
+                <div className="text-sm text-white font-semibold flex items-center gap-2">
+                  <i className="fa-solid fa-file-invoice text-blue-400/80"></i>
+                  {analysisStats.totalCandidates}
+                </div>
+              </div>
+              <div className="bg-slate-900/40 rounded-xl p-3 border border-slate-800/60 hover:border-slate-700 transition-colors">
+                <div className="text-[10px] text-slate-500 font-bold uppercase mb-1">Ứng viên hạng A</div>
+                <div className="text-sm text-emerald-400 font-bold flex items-center gap-2">
+                  <i className="fa-solid fa-star"></i>
+                  {analysisStats.topCandidates.length}
+                </div>
+              </div>
+              <div className="bg-slate-900/40 rounded-xl p-3 border border-slate-800/60 hover:border-slate-700 transition-colors">
+                <div className="text-[10px] text-slate-500 font-bold uppercase mb-1">Ngành nghề</div>
+                <div className="text-[11px] text-blue-300 font-medium truncate">
+                  {analysisStats.industries[0] || 'IT/Software'}
+                </div>
+              </div>
             </div>
           </div>
 
-          {analysisStats.industries.length > 0 && (
-            <div className="mt-3">
-              <div className="text-slate-400 text-sm">Ngành nghề chính:</div>
-              <div className="flex flex-wrap gap-2 mt-1">
-                {analysisStats.industries.map((industry, idx) => (
-                  <span key={idx} className="bg-blue-900/20 text-blue-300 px-2 py-1 rounded text-xs border border-blue-900/30">
-                    {industry}
-                  </span>
+          {/* Lựa chọn loại câu hỏi */}
+          <div className="space-y-4 mb-8">
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+              Chọn loại câu hỏi:
+            </h3>
+            <div className="space-y-3">
+              {[
+                { id: 'general', title: 'Câu hỏi chung', desc: 'Dựa trên JD và xu hướng ngành', icon: 'fa-users', color: 'purple' },
+                { id: 'specific', title: 'Câu hỏi cụ thể', desc: 'Dành cho 1 ứng viên cụ thể', icon: 'fa-user-tag', color: 'emerald' },
+                { id: 'comparative', title: 'So sánh ứng viên', desc: 'So sánh điểm mạnh giữa nhiều người', icon: 'fa-scale-balanced', color: 'orange' }
+              ].map((type) => (
+                <button
+                  key={type.id}
+                  onClick={() => setSelectedType(type.id as any)}
+                  className={`w-full flex items-center gap-4 p-4 rounded-xl border text-left transition-all group ${
+                    selectedType === type.id
+                    ? `border-${type.color}-500 bg-${type.color}-500/10 shadow-[0_0_20px_rgba(0,0,0,0.2)]`
+                    : 'border-slate-800 bg-slate-900/40 hover:border-slate-600'
+                  }`}
+                >
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border transition-colors ${
+                    selectedType === type.id ? `bg-${type.color}-500/20 border-${type.color}-500/30 text-${type.color}-400` : 'bg-slate-800 border-slate-700 text-slate-500'
+                  }`}>
+                    <i className={`fa-solid ${type.icon} text-lg`}></i>
+                  </div>
+                  <div className="min-w-0">
+                    <div className={`font-bold text-sm ${selectedType === type.id ? `text-${type.color}-400` : 'text-slate-300'}`}>{type.title}</div>
+                    <div className="text-[11px] text-slate-500 truncate group-hover:text-slate-400">{type.desc}</div>
+                  </div>
+                  {selectedType === type.id && (
+                    <div className={`ml-auto text-${type.color}-500`}>
+                      <i className="fa-solid fa-circle-check"></i>
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Chọn ứng viên cụ thể */}
+          {selectedType === 'specific' && (
+            <div className="mb-8 animate-in fade-in slide-in-from-top-2">
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Chọn ứng viên:</label>
+              <select
+                value={selectedCandidate}
+                onChange={(e) => setSelectedCandidate(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:border-emerald-500 outline-none transition-all"
+              >
+                <option value="">-- Chọn ứng viên từ danh sách --</option>
+                {candidateOptions.map(candidate => (
+                  <option key={candidate.id} value={candidate.id}>
+                    {candidate.candidateName} (Hạng {candidate.analysis?.['Hạng']} - {candidate.analysis?.['Tổng điểm']}đ)
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Hiển thị ứng viên so sánh */}
+          {selectedType === 'comparative' && selectedCandidates.length > 0 && (
+            <div className="mb-8 p-4 bg-orange-500/5 rounded-2xl border border-orange-500/20 animate-in fade-in slide-in-from-top-2">
+              <h4 className="text-xs font-bold text-orange-400 uppercase tracking-widest mb-3">Ứng viên đang so sánh:</h4>
+              <div className="flex flex-wrap gap-2">
+                {selectedCandidates.map(candidate => (
+                  <div key={candidate.id} className="bg-orange-950/40 text-orange-300 px-3 py-1.5 rounded-lg text-[10px] font-bold border border-orange-900/40 flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div>
+                    {candidate.candidateName}
+                  </div>
                 ))}
               </div>
             </div>
           )}
-        </div>
 
-        {/* Lựa chọn loại câu hỏi */}
-        <div className="mb-6">
-          <h3 className="text-lg font-semibold text-white mb-3">Chọn loại câu hỏi:</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <button
-              onClick={() => setSelectedType('general')}
-              className={`p-4 rounded-xl border transition-all ${selectedType === 'general'
-                ? 'border-purple-500 bg-purple-900/20 text-purple-300'
-                : 'border-slate-800 bg-slate-900/50 text-slate-300 hover:border-slate-600'
-                }`}
-            >
-              <i className="fa-solid fa-users text-xl mb-2 block"></i>
-              <div className="font-semibold">Câu hỏi chung</div>
-              <div className="text-sm opacity-80">Dựa trên JD và xu hướng chung</div>
-            </button>
-
-            <button
-              onClick={() => setSelectedType('specific')}
-              className={`p-4 rounded-xl border transition-all ${selectedType === 'specific'
-                ? 'border-green-500 bg-green-900/20 text-green-300'
-                : 'border-slate-800 bg-slate-900/50 text-slate-300 hover:border-slate-600'
-                }`}
-            >
-              <i className="fa-solid fa-user text-xl mb-2 block"></i>
-              <div className="font-semibold">Câu hỏi cụ thể</div>
-              <div className="text-sm opacity-80">Dành cho 1 ứng viên cụ thể</div>
-            </button>
-
-            <button
-              onClick={() => setSelectedType('comparative')}
-              className={`p-4 rounded-xl border transition-all ${selectedType === 'comparative'
-                ? 'border-orange-500 bg-orange-900/20 text-orange-300'
-                : 'border-slate-800 bg-slate-900/50 text-slate-300 hover:border-slate-600'
-                }`}
-            >
-              <i className="fa-solid fa-balance-scale text-xl mb-2 block"></i>
-              <div className="font-semibold">So sánh ứng viên</div>
-              <div className="text-sm opacity-80">Câu hỏi để so sánh nhiều ứng viên</div>
-            </button>
-          </div>
-        </div>
-
-        {/* Chọn ứng viên cụ thể */}
-        {selectedType === 'specific' && (
-          <div className="mb-6">
-            <label className="block text-white font-semibold mb-2">Chọn ứng viên:</label>
-            <select
-              value={selectedCandidate}
-              onChange={(e) => setSelectedCandidate(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white"
-            >
-              <option value="">-- Chọn ứng viên --</option>
-              {candidateOptions.map(candidate => (
-                <option key={candidate.id} value={candidate.id}>
-                  {candidate.candidateName} - Hạng {candidate.analysis?.['Hạng']} ({candidate.analysis?.['Tổng điểm']} điểm)
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {/* Thông tin ứng viên được chọn */}
-        {selectedType === 'comparative' && selectedCandidates.length > 0 && (
-          <div className="mb-6 bg-slate-900/50 rounded-xl p-4 border border-slate-800">
-            <h4 className="text-white font-semibold mb-2">Ứng viên được chọn để so sánh:</h4>
-            <div className="flex flex-wrap gap-2">
-              {selectedCandidates.map(candidate => (
-                <span key={candidate.id} className="bg-orange-900/30 text-orange-300 px-3 py-1 rounded-full text-sm border border-orange-900/40">
-                  {candidate.candidateName} (Hạng {candidate.analysis?.['Hạng']})
-                </span>
-              ))}
+          {/* Logic check for comparative */}
+          {selectedType === 'comparative' && selectedCandidates.length === 0 && (
+            <div className="mb-8 p-4 bg-amber-500/5 rounded-2xl border border-amber-500/20 text-xs text-amber-300 italic">
+              <i className="fa-solid fa-circle-info mr-2"></i>
+              Vui lòng chọn ứng viên ở bảng danh sách trước khi so sánh.
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Button tạo câu hỏi */}
-        <div className="text-center mb-6">
-          <button
-            onClick={generateQuestions}
-            disabled={isLoading || (selectedType === 'specific' && !selectedCandidate)}
-            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:from-slate-600 disabled:to-slate-600 text-white px-8 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed"
-          >
-            {isLoading ? (
-              <>
-                <i className="fa-solid fa-spinner fa-spin mr-2"></i>
-                Đang tạo câu hỏi...
-              </>
-            ) : (
-              <>
-                <i className="fa-solid fa-magic mr-2"></i>
-                Tạo câu hỏi phỏng vấn
-              </>
-            )}
-          </button>
+          {/* Button tạo câu hỏi */}
+          <div className="mt-auto pt-4">
+            <button
+              onClick={generateQuestions}
+              disabled={isLoading || (selectedType === 'specific' && !selectedCandidate) || (selectedType === 'comparative' && selectedCandidates.length === 0)}
+              className="w-full h-12 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 disabled:from-slate-700 disabled:to-slate-700 disabled:text-slate-500 text-white rounded-xl font-bold transition-all transform hover:scale-[1.02] active:scale-95 disabled:scale-100 disabled:cursor-not-allowed shadow-xl shadow-blue-900/20 relative overflow-hidden"
+            >
+              {isLoading ? (
+                <div className="flex items-center justify-center gap-3">
+                  <i className="fa-solid fa-circle-notch fa-spin"></i>
+                  <span>Đang xử lý dữ liệu...</span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-2">
+                  <i className="fa-solid fa-brain"></i>
+                  <span>Tạo câu hỏi phỏng vấn AI</span>
+                </div>
+              )}
+            </button>
+          </div>
         </div>
 
-        {/* Kết quả câu hỏi */}
-        {questionSets.length > 0 && (
-          <div className="space-y-6">
-            <h3 className="text-xl font-bold text-white flex items-center gap-2">
-              <i className="fa-solid fa-list-check text-green-400"></i>
-              Câu hỏi phỏng vấn được đề xuất
+        {/* Right Panel: Suggested Questions */}
+        <div className="flex-1 bg-slate-950/30 p-6 overflow-y-auto custom-scrollbar flex flex-col">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-bold text-white flex items-center gap-3">
+              <i className="fa-solid fa-list-check text-emerald-400"></i>
+              Gợi ý từ AI
             </h3>
-
-            {questionSets.map((set, index) => (
-              <div key={index} className="bg-slate-900/50 rounded-xl border border-slate-800">
-                <div className="p-4 border-b border-slate-800">
-                  <h4 className={`text-lg font-semibold ${set.color} flex items-center gap-2`}>
-                    <i className={set.icon}></i>
-                    {set.category}
-                  </h4>
-                </div>
-                <div className="p-4">
-                  <div className="space-y-3">
-                    {set.questions.map((question, qIndex) => (
-                      <div key={qIndex} className="flex items-start gap-3 p-3 bg-slate-950/50 rounded-lg hover:bg-slate-900/80 transition-colors border border-slate-800/50">
-                        <div className={`w-6 h-6 rounded-full ${set.color.replace('text-', 'bg-').replace('400', '500')} flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5`}>
-                          {qIndex + 1}
-                        </div>
-                        <p className="text-slate-200 leading-relaxed">{question}</p>
-                        <button
-                          onClick={() => navigator.clipboard.writeText(question)}
-                          className="text-slate-400 hover:text-white transition-colors p-1 flex-shrink-0"
-                          title="Copy câu hỏi"
-                        >
-                          <i className="fa-solid fa-copy"></i>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            {/* Copy all button */}
-            <div className="text-center">
+            {questionSets.length > 0 && (
               <button
                 onClick={() => {
                   const allQuestions = questionSets.map(set =>
@@ -358,14 +342,67 @@ const InterviewQuestionGenerator: React.FC<InterviewQuestionGeneratorProps> = ({
                   ).join('\n\n');
                   navigator.clipboard.writeText(allQuestions);
                 }}
-                className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-2 rounded-lg transition-colors border border-slate-700"
+                className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest px-3 py-1.5 bg-emerald-500/10 rounded-lg border border-emerald-500/30 hover:bg-emerald-500/20 transition-all"
               >
-                <i className="fa-solid fa-copy mr-2"></i>
-                Copy tất cả câu hỏi
+                Copy tất cả
               </button>
-            </div>
+            )}
           </div>
-        )}
+
+          {isLoading ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-center space-y-4 animate-in fade-in">
+              <div className="w-16 h-16 rounded-full border-4 border-slate-800 border-t-purple-500 animate-spin"></div>
+              <div>
+                <p className="text-slate-300 font-bold">AI đang phân tích CV...</p>
+                <p className="text-xs text-slate-500 mt-1">Đang trích xuất nội dung và tạo câu hỏi tối ưu</p>
+              </div>
+            </div>
+          ) : questionSets.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-8 border-2 border-dashed border-slate-800/60 rounded-3xl opacity-50">
+              <div className="w-20 h-20 bg-slate-900 rounded-3xl flex items-center justify-center mb-6 text-slate-700">
+                <i className="fa-solid fa-comment-nodes text-4xl"></i>
+              </div>
+              <h4 className="text-slate-300 font-bold mb-2">Chưa có câu hỏi được tạo</h4>
+              <p className="text-sm text-slate-500 max-w-xs">Nhấn "Tạo câu hỏi phỏng vấn" để AI trích xuất các câu hỏi phù hợp nhất cho ứng viên.</p>
+            </div>
+          ) : (
+            <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
+              {questionSets.map((set, setIndex) => (
+                <div key={setIndex} className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <i className={`${set.icon} ${set.color} text-sm`}></i>
+                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">{set.category}</h4>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3">
+                    {set.questions.map((question, qIndex) => (
+                      <div 
+                        key={qIndex} 
+                        className="group bg-slate-900/60 border border-slate-800/40 rounded-xl p-4 flex gap-4 hover:border-slate-700 hover:bg-slate-900/80 transition-all shadow-sm"
+                      >
+                        <div className={`w-6 h-6 rounded-lg ${set.color.replace('text-', 'bg-').replace('400', '500/20')} ${set.color} flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5 border border-current opacity-60`}>
+                          {qIndex + 1}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-slate-200 leading-relaxed font-medium">{question}</p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(question);
+                            // Optionally add a toast here
+                          }}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-800/50 text-slate-500 hover:text-white hover:bg-slate-700 transition-all opacity-0 group-hover:opacity-100 shrink-0"
+                          title="Copy câu hỏi"
+                        >
+                          <i className="fa-solid fa-copy text-xs"></i>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

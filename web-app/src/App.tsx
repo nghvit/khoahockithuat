@@ -447,7 +447,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ onResetRequest, className, isLo
     jdText, setJdText,
     jobPosition, setJobPosition,
     weights, setWeights,
-    hardFilters, setHardFilters,
+    hardFilters, setHardFilters: setHardFiltersWithFlag,
     cvFiles, setCvFiles,
     analysisResults, setAnalysisResults,
     isLoading, setIsLoading,
@@ -458,6 +458,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ onResetRequest, className, isLo
     companyName, setCompanyName,
     salary, setSalary,
     requirementsSummary, setRequirementsSummary,
+    uid: currentUser?.uid || '',
   };
 
   return (
@@ -514,30 +515,54 @@ const MainLayout: React.FC<MainLayoutProps> = ({ onResetRequest, className, isLo
             {/* Mobile Menu Dropdown */}
             {showMobileMenu && (
               <>
-                <div className="fixed inset-0 z-40" onClick={() => setShowMobileMenu(false)}></div>
-                <div className="absolute right-0 top-full mt-2 w-48 bg-[#0f172a] border border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden">
-                  <div className="px-4 py-3 border-b border-slate-700 bg-slate-800/50">
-                    <p className="text-sm font-bold text-white truncate">{userName || (userEmail ? userEmail.split('@')[0] : 'User')}</p>
-                    <p className="text-xs text-slate-400 truncate">{userEmail}</p>
+                <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={() => setShowMobileMenu(false)}></div>
+                <div className="absolute right-0 top-full mt-4 w-64 bg-slate-900 border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="px-5 py-5 border-b border-white/10 bg-gradient-to-br from-indigo-500/10 to-transparent">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center text-white font-bold overflow-hidden shadow-lg">
+                        {userAvatar ? (
+                          <img src={userAvatar} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-cyan-500 to-blue-600">
+                            {userEmail ? userEmail.charAt(0).toUpperCase() : <i className="fa-solid fa-user"></i>}
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-black text-white truncate uppercase tracking-tight">{userName || (userEmail ? userEmail.split('@')[0] : 'User')}</p>
+                        <p className="text-[10px] text-slate-500 truncate font-medium">{userEmail}</p>
+                      </div>
+                    </div>
+                    <div className="px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[8px] font-black text-emerald-400 uppercase tracking-widest inline-flex items-center gap-1">
+                      <span className="w-1 h-1 rounded-full bg-emerald-500"></span>
+                      Online
+                    </div>
                   </div>
-                  <div className="py-1">
+                  <div className="p-2 space-y-1">
                     <button
                       onClick={() => {
                         setShowMobileMenu(false);
                         setHistoryModalOpen(true);
                       }}
-                      className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-800 hover:text-white flex items-center gap-2"
+                      className="w-full text-left px-3 py-3 text-[11px] font-bold text-slate-300 hover:text-white hover:bg-white/5 rounded-xl flex items-center gap-3 transition-all group"
                     >
-                      <i className="fa-solid fa-clock-rotate-left"></i> Lịch sử phân tích
+                      <div className="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-cyan-400 group-hover:bg-cyan-400/10 transition-all">
+                        <i className="fa-solid fa-clock-rotate-left"></i>
+                      </div>
+                      Lịch sử phân tích
                     </button>
+                    <div className="h-px bg-white/5 mx-2 my-1"></div>
                     <button
                       onClick={() => {
                         setShowMobileMenu(false);
                         handleLogout();
                       }}
-                      className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2"
+                      className="w-full text-left px-3 py-3 text-[11px] font-black text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl flex items-center gap-3 transition-all group uppercase tracking-widest"
                     >
-                      <i className="fa-solid fa-right-from-bracket"></i> Đăng xuất
+                      <div className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 group-hover:scale-110 transition-all">
+                        <i className="fa-solid fa-right-from-bracket"></i>
+                      </div>
+                      Đăng xuất
                     </button>
                   </div>
                 </div>

@@ -2,7 +2,11 @@ import React, { useState } from 'react';
 import { extractTextFromJdFile } from '../../../services/data/ocrService';
 import { extractJobPositionFromJD, filterAndStructureJD, extractHardFiltersFromJD, extractJDMetadata } from '../../../services/ai/geminiService';
 import { googleDriveService } from '../../../services/storage/googleDriveService';
-import type { HardFilters } from '../../../types';
+import type { HardFilters, WeightCriteria, JDTemplate } from '../../../types';
+import TemplateSelector from '../../ui/TemplateSelector';
+import HistorySelector from '../../ui/HistorySelector';
+import { JDTemplateService } from '../../../services/storage/jdTemplateService';
+import { JDHistoryService } from '../../../services/storage/jdHistoryService';
 
 interface JDInputProps {
   jdText: string;
@@ -13,16 +17,30 @@ interface JDInputProps {
   setHardFilters: React.Dispatch<React.SetStateAction<HardFilters>>;
   onComplete: () => void;
   sidebarCollapsed?: boolean;
-  // JD Metadata
+  requirementsSummary: string;
+  setRequirementsSummary: React.Dispatch<React.SetStateAction<string>>;
+  uid: string;
+  setWeights: React.Dispatch<React.SetStateAction<WeightCriteria>>;
   companyName: string;
   setCompanyName: React.Dispatch<React.SetStateAction<string>>;
   salary: string;
   setSalary: React.Dispatch<React.SetStateAction<string>>;
-  requirementsSummary: string;
-  setRequirementsSummary: React.Dispatch<React.SetStateAction<string>>;
 }
 
-const JDInput: React.FC<JDInputProps> = ({ jdText, setJdText, jobPosition, setJobPosition, hardFilters, setHardFilters, onComplete, sidebarCollapsed = false, companyName, setCompanyName, salary, setSalary, requirementsSummary, setRequirementsSummary }) => {
+const JDInput: React.FC<JDInputProps> = ({ 
+  jdText, setJdText, 
+  jobPosition, setJobPosition, 
+  hardFilters, setHardFilters, 
+  onComplete, 
+  sidebarCollapsed = false, 
+  companyName, setCompanyName, 
+  salary, setSalary, 
+  requirementsSummary, setRequirementsSummary,
+  uid,
+  setWeights
+}) => {
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
   const isCompleteEnabled = jdText.trim().length > 50 && jobPosition.trim().length > 3;
   const characterCount = jdText.length;
 
@@ -35,11 +53,10 @@ const JDInput: React.FC<JDInputProps> = ({ jdText, setJdText, jobPosition, setJo
   const [showUploadOptions, setShowUploadOptions] = useState(false);
 
   const getFriendlyErrorMessage = (error: unknown, context: 'ocr' | 'summarize'): string => {
-    console.error(`Lỗi trong quá trình ${context}:`, error); // Log the original error for debugging
+    console.error(`Lỗi trong quá trình ${context}:`, error);
 
     if (error instanceof Error) {
       const message = error.message.toLowerCase();
-      // This error is already user-friendly
       if (message.includes('không thể trích xuất đủ nội dung')) {
         return error.message;
       }
@@ -112,7 +129,7 @@ const JDInput: React.FC<JDInputProps> = ({ jdText, setJdText, jobPosition, setJo
 
       if (extractedPosition) {
         setJobPosition(extractedPosition);
-        successMessage = `✓ Đã phát hiện chức danh: ${extractedPosition}`;
+        successMessage = `✔ Đã phát hiện chức danh: ${extractedPosition}`;
       }
 
       setOcrMessage('Đang trích xuất thông tin công ty & lương...');
@@ -154,7 +171,7 @@ const JDInput: React.FC<JDInputProps> = ({ jdText, setJdText, jobPosition, setJo
 
         if (extractedInfo) {
           const tickedCount = Object.keys(mandatoryUpdates).length;
-          successMessage += successMessage ? ` | 🎯 Đã điền & tick ✓ ${tickedCount} tiêu chí: ${extractedInfo}` : `✓ 🎯 Đã tự động điền & tick ✓ ${tickedCount} tiêu chí: ${extractedInfo}`;
+          successMessage += successMessage ? ` | 🎯 Đã điền & tick ✔ ${tickedCount} tiêu chí: ${extractedInfo}` : `✔ 🎯 Đã tự động điền & tick ✔ ${tickedCount} tiêu chí: ${extractedInfo}`;
         }
       }
 
@@ -198,32 +215,29 @@ const JDInput: React.FC<JDInputProps> = ({ jdText, setJdText, jobPosition, setJo
 
     setIsSummarizing(true);
     setSummarizeError('');
-    setOcrError(''); // Clear other errors
+    setOcrError('');
 
     try {
       const structuredJd = await filterAndStructureJD(jdText);
       setJdText(structuredJd);
 
       const extractedPosition = await extractJobPositionFromJD(structuredJd);
-      console.log('🔍 AI Optimizer extracted position:', extractedPosition); // Debug log
+      console.log('🔍 AI Optimizer extracted position:', extractedPosition);
 
       if (extractedPosition) {
         setJobPosition(extractedPosition);
-        console.log('✓ AI đã trích xuất chức danh:', extractedPosition);
+        console.log('✔ AI đã trích xuất chức danh:', extractedPosition);
       } else {
         console.log('❌ AI Optimizer: No job position extracted');
       }
 
-      // Extract JD metadata (company, salary, summary)
       const metadata = await extractJDMetadata(structuredJd);
       if (metadata.companyName) setCompanyName(metadata.companyName);
       if (metadata.salary) setSalary(metadata.salary);
       if (metadata.requirementsSummary) setRequirementsSummary(metadata.requirementsSummary);
 
-      // Extract hard filters from optimized JD with smart conversion
       const extractedFilters = await extractHardFiltersFromJD(structuredJd);
       if (extractedFilters && Object.keys(extractedFilters).length > 0) {
-        // Auto-tick mandatory checkboxes for any extracted field
         const mandatoryUpdates: any = {};
         if (extractedFilters.location) mandatoryUpdates.locationMandatory = true;
         if (extractedFilters.minExp) mandatoryUpdates.minExpMandatory = true;
@@ -235,7 +249,7 @@ const JDInput: React.FC<JDInputProps> = ({ jdText, setJdText, jobPosition, setJo
         if (extractedFilters.contractType) mandatoryUpdates.contractTypeMandatory = true;
 
         setHardFilters(prev => ({ ...prev, ...extractedFilters, ...mandatoryUpdates }));
-        console.log('✓ AI đã tự động điền & tick tiêu chí lọc:', extractedFilters, 'Mandatory:', mandatoryUpdates);
+        console.log('✔ AI đã tự động điền & tick tiêu chí lọc:', extractedFilters, 'Mandatory:', mandatoryUpdates);
       }
 
     } catch (error) {
@@ -246,232 +260,264 @@ const JDInput: React.FC<JDInputProps> = ({ jdText, setJdText, jobPosition, setJo
     }
   };
 
-  // Tính toán vị trí left của fixed header bar dựa trên trạng thái sidebar
-  const sidebarWidth = sidebarCollapsed ? 'md:left-[72px]' : 'md:left-64';
+  const handleSelectTemplate = (template: JDTemplate) => {
+    setJdText(template.jdText);
+    setJobPosition(template.jobPosition);
+    if (template.hardFilters) setHardFilters(template.hardFilters);
+    if (template.weights) setWeights(template.weights);
+    setOcrMessage(`✔ Đã tải mẫu: ${template.name}`);
+    setTimeout(() => setOcrMessage(''), 3000);
+  };
+
+  const handleSaveTemplate = async () => {
+    if (!uid) {
+      setOcrError('Bạn cần đăng nhập để lưu mẫu.');
+      return;
+    }
+    if (jdText.length < 50 || jobPosition.length < 3) {
+      setOcrError('Vui lòng nhập đầy đủ JD và chức danh trước khi lưu.');
+      return;
+    }
+
+    const templateName = prompt('Nhập tên cho mẫu này:', `Mẫu ${jobPosition}`);
+    if (!templateName) return;
+
+    setIsSaving(true);
+    setSaveMessage('Đang lưu mẫu...');
+    try {
+      await JDTemplateService.saveTemplate({
+        uid,
+        name: templateName,
+        jdText,
+        jobPosition,
+        hardFilters,
+      });
+      setSaveMessage('✔ Đã lưu mẫu thành công!');
+      setTimeout(() => setSaveMessage(''), 3000);
+    } catch (error) {
+      console.error('Failed to save template:', error);
+      setOcrError('Lỗi khi lưu mẫu. Vui lòng thử lại.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleComplete = async () => {
+    // Tự động lưu vào lịch sử khi nhấn hoàn thành
+    if (uid && jdText.length >= 50 && jobPosition.length >= 3) {
+      try {
+        await JDHistoryService.saveHistory({
+          uid,
+          jobPosition,
+          jdText,
+          hardFilters,
+        });
+      } catch (error) {
+        console.error('Failed to save history:', error);
+      }
+    }
+    onComplete();
+  };
 
   return (
-    <section id="module-jd" className="module-pane active w-full h-screen flex flex-col bg-[#0B1120]" aria-labelledby="jd-title">
+    <section id="module-jd" className="module-pane active w-full h-screen bg-[#0b1220] overflow-hidden flex flex-col" aria-labelledby="jd-title">
+      <div className="flex-1 flex flex-col min-h-0 w-full bg-[#0f172a] border-l border-white/5 p-4 md:p-5 relative overflow-hidden">
+        {/* Decorative background glow - subtle */}
+        <div className="absolute -top-24 -left-24 w-80 h-80 bg-indigo-500/5 blur-[100px] rounded-full"></div>
 
-      {/* ─── FIXED HEADER BAR: responsive 2-column (desktop) / 2-row (mobile) ─── */}
-      <div className={`fixed top-14 md:top-0 left-0 right-0 z-30 ${sidebarWidth} transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]`}>
-        {/* id for CSS responsive targeting */}
-        <div id="jdinput-header" className="bg-slate-900 border-b border-slate-800 flex items-stretch md:flex-row flex-col">
-
-          {/* CỘT TRÁI / ROW 1: Ô nhập chức danh công việc */}
-          <div className="jd-col-left flex-1 flex items-center bg-slate-900/60 md:h-[101px] h-[52px]">
-            <input
-              type="text"
-              id="job-position"
-              value={jobPosition}
-              onChange={(e) => setJobPosition(e.target.value)}
-              className="w-full h-full text-base pl-4 md:pl-5 pr-3 bg-transparent border-0 border-b-2 border-indigo-500/40 text-violet-100 placeholder-slate-500 focus:outline-none focus:border-indigo-400 transition-colors font-medium tracking-wide"
-              placeholder="Nhập chức danh… VD: Senior Frontend Developer"
-              maxLength={100}
-            />
-          </div>
-
-          {/* Divider (desktop only) */}
-          {/* Divider removed */}
-
-          {/* CỘT PHẢI / ROW 2: 3 info fields */}
-          <div className="jd-col-right md:w-[320px] lg:w-[360px] flex-shrink-0 flex md:flex-col flex-row md:justify-center md:gap-2 md:px-4 md:py-2 md:bg-cyan-950/20 
-                          px-3 gap-2 overflow-x-auto items-center bg-cyan-950/40 md:h-auto h-[38px] border-t border-slate-800/40 md:border-t-0">
-
-            {/* Tên công ty — cyan */}
-            <div className="jd-field flex items-center gap-1.5 flex-shrink-0 md:flex-shrink md:w-full border-b border-cyan-400/30 pb-1.5 mb-1">
-              <i className="fa-solid fa-building text-[10px] text-cyan-400 flex-shrink-0"></i>
-              <input
-                type="text"
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                placeholder="Tên công ty"
-                className="min-w-[90px] md:min-w-0 md:flex-1 text-[11px] bg-transparent text-cyan-300 placeholder-slate-600 border-0 focus:outline-none truncate font-medium"
-              />
-              {companyName && (
-                <button onClick={() => setCompanyName('')} className="jd-field-clear text-slate-600 hover:text-cyan-400 transition-colors flex-shrink-0">
-                  <i className="fa-solid fa-xmark text-[9px]"></i>
-                </button>
-              )}
-            </div>
-
-            {/* Separator mobile */}
-            <div className="md:hidden w-px h-3 bg-slate-700/60 flex-shrink-0"></div>
-
-            {/* Mức lương — emerald */}
-            <div className="jd-field flex items-center gap-1.5 flex-shrink-0 md:flex-shrink md:w-full">
-              <i className="fa-solid fa-money-bill-wave text-[10px] text-emerald-400 flex-shrink-0"></i>
-              <input
-                type="text"
-                value={salary}
-                onChange={(e) => setSalary(e.target.value)}
-                placeholder="Mức lương"
-                className="min-w-[80px] md:min-w-0 md:flex-1 text-[11px] bg-transparent text-emerald-300 placeholder-slate-600 border-0 focus:outline-none truncate font-medium"
-              />
-              {salary && (
-                <button onClick={() => setSalary('')} className="jd-field-clear text-slate-600 hover:text-emerald-400 transition-colors flex-shrink-0">
-                  <i className="fa-solid fa-xmark text-[9px]"></i>
-                </button>
-              )}
-            </div>
-
-            {/* Separator mobile */}
-            <div className="md:hidden w-px h-3 bg-slate-700/60 flex-shrink-0"></div>
-
-            {/* Tóm tắt yêu cầu — amber */}
-            <div className="jd-field flex items-center gap-1.5 flex-shrink-0 md:flex-shrink md:w-full">
-              <i className="fa-solid fa-list-check text-[10px] text-amber-400 flex-shrink-0"></i>
-              <input
-                type="text"
-                value={requirementsSummary}
-                onChange={(e) => setRequirementsSummary(e.target.value)}
-                placeholder="Yêu cầu chính"
-                className="min-w-[90px] md:min-w-0 md:flex-1 text-[11px] bg-transparent text-amber-200 placeholder-slate-600 border-0 focus:outline-none truncate font-medium"
-              />
-              {requirementsSummary && (
-                <button onClick={() => setRequirementsSummary('')} className="jd-field-clear text-slate-600 hover:text-amber-400 transition-colors flex-shrink-0">
-                  <i className="fa-solid fa-xmark text-[9px]"></i>
-                </button>
-              )}
-            </div>
-
-          </div>
-
-          {/* Status Badge — desktop only */}
-          <div className="jd-col-counter hidden md:flex items-center justify-center px-8 flex-shrink-0 bg-cyan-950/20 transition-all duration-300">
-            {jobPosition.trim().length > 3 && !isSummarizing && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[10px] text-emerald-400 font-bold uppercase tracking-wider animate-in fade-in zoom-in duration-300">
-                <i className="fa-solid fa-circle-check text-[9px]"></i>
-                Sẵn sàng
+        {/* ─── HEADER SECTION (Combined Job Title + Actions) ─── */}
+        <div className="relative z-10 w-full flex-shrink-0 mb-3 bg-white/2 border border-white/5 rounded-none p-3 backdrop-blur-md">
+          <div className="flex flex-col md:flex-row md:items-center gap-3">
+            
+            {/* LEFT: Shortened Job Title Input */}
+            <div className="flex-1 space-y-1 min-w-0">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-0.5 block">
+                Chức danh tuyển dụng
+              </label>
+              <div className="relative group">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-indigo-400 transition-colors duration-300 pointer-events-none">
+                  <i className="fa-solid fa-briefcase text-base"></i>
+                </div>
+                <input
+                  type="text"
+                  id="job-position"
+                  value={jobPosition}
+                  onChange={(e) => setJobPosition(e.target.value)}
+                  className="h-10 w-full bg-slate-900/60 border border-white/10 rounded-none pl-10 pr-4 text-sm font-bold text-white placeholder-slate-600 outline-none focus:border-indigo-500/40 transition-all"
+                  placeholder="VD: Senior Frontend Developer"
+                  maxLength={100}
+                />
               </div>
-            )}
-            {isSummarizing && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/30 text-[10px] text-purple-400 font-bold uppercase tracking-wider">
-                <i className="fa-solid fa-spinner fa-spin text-[9px]"></i>
-                Đang xử lý
-              </div>
-            )}
-          </div>
-
-        </div>
-      </div>
-
-      {/* ─── MAIN CONTENT AREA ─── */}
-      {/* mobile: 56px nav + 52px title + 38px AI row = 146px; desktop: 101px header */}
-      <div className="jdinput-main-area flex-1 flex flex-col pt-[146px] md:pt-[101px] min-h-0">
-
-        {/* Unified JD Card — textarea + footer hints + action buttons in one container */}
-        <div className="flex-1 flex flex-col min-h-0 border-x border-b border-slate-700/80 bg-slate-900">
-
-          {/* Textarea — grows to fill space */}
-          <textarea
-            id="job-description"
-            className="flex-1 w-full px-5 py-4 bg-transparent text-sm text-slate-200 leading-relaxed placeholder-slate-700 resize-none focus:outline-none"
-            placeholder="Dán nội dung Job Description vào đây, hoặc dùng nút &quot;Tải JD lên&quot; để quét từ file PDF/DOCX/PNG…"
-            value={jdText}
-            onChange={(e) => setJdText(e.target.value)}
-          />
-
-          {/* Hint footer */}
-          <div className="px-5 py-2 border-t border-slate-800/60 flex-shrink-0">
-            <p className="text-[11px] text-slate-600">
-              Nhập nội dung rõ ràng để AI bám sát JD gốc.&nbsp; Khuyến nghị dùng file <span className="text-slate-500">PDF/DOCX</span> để OCR chính xác hơn.
-            </p>
-          </div>
-
-          {/* Error banner */}
-          {(ocrError || summarizeError) && (
-            <div className="mx-5 mb-3 px-4 py-3 bg-red-900/20 border border-red-500/30 flex items-start gap-2 flex-shrink-0">
-              <i className="fa-solid fa-triangle-exclamation text-red-400 mt-0.5 flex-shrink-0"></i>
-              <p className="text-red-300 text-sm">{ocrError || summarizeError}</p>
             </div>
-          )}
 
-          {/* Action Buttons Row — pinned to bottom of card */}
-          <div className="border-t border-slate-700/60 bg-slate-800/30 px-5 py-4 flex-shrink-0">
-            <div className="flex flex-col sm:flex-row gap-3">
-
-              {/* Upload Group */}
-              <div className={`flex-1 flex gap-2 transition-all duration-300 ${showUploadOptions ? 'flex-row' : ''}`}>
-                {!showUploadOptions ? (
+            {/* RIGHT: Action Group (History, Templates, Save) */}
+            <div className="flex flex-col items-end gap-1 flex-shrink-0">
+               <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mr-0.5 block text-right">
+                Tệp & Mẫu
+              </label>
+              <div className="flex items-center gap-2">
+                {saveMessage && (
+                  <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest animate-in fade-in slide-in-from-right-2 mr-1">
+                    {saveMessage}
+                  </span>
+                )}
+                <div className="flex items-center gap-2">
+                  <HistorySelector uid={uid} onSelect={handleSelectTemplate} className="rounded-none child:rounded-none" />
+                  <TemplateSelector uid={uid} onSelect={handleSelectTemplate} className="rounded-none child:rounded-none" />
                   <button
-                    onClick={() => setShowUploadOptions(true)}
-                    disabled={isOcrLoading || isSummarizing}
-                    className="w-full h-11 px-4 flex items-center justify-center gap-2 text-sm font-medium text-white bg-slate-800 border border-slate-700 hover:border-cyan-500 hover:bg-slate-700/60 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={handleSaveTemplate}
+                    disabled={isSaving || jdText.length < 50}
+                    className="group flex items-center gap-2 px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-none text-[9px] font-black text-indigo-300 hover:bg-indigo-500/20 hover:text-white hover:border-indigo-500/40 transition-all uppercase tracking-widest disabled:opacity-30"
                   >
-                    <i className="fa-solid fa-cloud-arrow-up text-cyan-400"></i>
-                    <span>Tải JD lên</span>
+                    <i className={`fa-solid ${isSaving ? 'fa-spinner fa-spin' : 'fa-floppy-disk'} text-[10px]`}></i>
+                    <span>Lưu mẫu</span>
                   </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ─── INFO SECTION (Company, Salary, etc.) ─── */}
+        <div className="relative z-10 w-full flex-shrink-0 mb-4">
+          <div className="bg-slate-900/40 border border-white/5 rounded-none p-3 relative overflow-hidden group/panel">
+              <div className="flex items-center justify-between mb-2 relative z-10">
+                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                  <i className="fa-solid fa-circle-info text-[9px] text-indigo-400"></i>
+                  Thông tin sơ lược
+                </h4>
+                {jobPosition.trim().length > 3 && !isSummarizing && (
+                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-none bg-emerald-500/10 border border-emerald-500/20 text-[8px] text-emerald-400 font-black uppercase tracking-widest">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Ready
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 relative z-10">
+                <div className="flex items-center gap-2 h-9 bg-white/3 border border-white/5 rounded-none px-3 focus-within:border-indigo-500/30 transition-all">
+                  <i className="fa-solid fa-building text-[10px] text-slate-500"></i>
+                  <input
+                    type="text"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    placeholder="Tên công ty"
+                    className="flex-1 bg-transparent border-none text-[11px] text-slate-200 placeholder-slate-600 focus:outline-none font-medium truncate"
+                  />
+                </div>
+                <div className="flex items-center gap-2 h-9 bg-white/3 border border-white/5 rounded-none px-3 focus-within:border-indigo-500/30 transition-all">
+                  <i className="fa-solid fa-money-bill-wave text-[10px] text-slate-500"></i>
+                  <input
+                    type="text"
+                    value={salary}
+                    onChange={(e) => setSalary(e.target.value)}
+                    placeholder="Mức lương"
+                    className="flex-1 bg-transparent border-none text-[11px] text-slate-200 placeholder-slate-600 focus:outline-none font-medium truncate"
+                  />
+                </div>
+                <div className="flex items-center gap-2 h-9 bg-white/3 border border-white/5 rounded-none px-3 focus-within:border-indigo-500/30 transition-all">
+                  <i className="fa-solid fa-clipboard-list text-[10px] text-slate-500"></i>
+                  <input
+                    type="text"
+                    value={requirementsSummary}
+                    onChange={(e) => setRequirementsSummary(e.target.value)}
+                    placeholder="Yêu cầu chính"
+                    className="flex-1 bg-transparent border-none text-[11px] text-slate-200 placeholder-slate-600 focus:outline-none font-medium truncate"
+                  />
+                </div>
+              </div>
+            </div>
+        </div>
+
+        {/* ─── JD EDITOR SECTION (Flexible Height - Expands) ─── */}
+        <div className="relative z-10 space-y-1.5 pt-3 border-t border-white/5 w-full flex-1 flex flex-col min-h-0">
+          <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-0.5 block flex-shrink-0">
+            Mô tả công việc (JD)
+          </label>
+          <div className="relative group w-full flex-1 min-h-0">
+            <textarea
+              id="job-description"
+              className="w-full h-full p-4 bg-slate-900/40 border border-white/10 rounded-none text-[14px] text-slate-300 leading-[1.6] placeholder-slate-700 outline-none focus:border-indigo-500/30 transition-all resize-none custom-scrollbar"
+              placeholder="Dán nội dung Job Description tại đây hoặc tải file JD (PDF/DOCX) để AI phân tích..."
+              value={jdText}
+              onChange={(e) => setJdText(e.target.value)}
+            />
+            {/* Character count */}
+            <div className="absolute bottom-3 right-4 text-[9px] font-bold text-slate-600 uppercase tracking-widest pointer-events-none">
+              {characterCount} chars
+            </div>
+          </div>
+        </div>
+
+        {/* Error Banner */}
+        {(ocrError || summarizeError) && (
+          <div className="relative z-10 px-3 py-2 mt-3 bg-red-900/20 border border-red-500/20 rounded-none flex items-start gap-3 animate-in fade-in slide-in-from-top-2 flex-shrink-0">
+            <i className="fa-solid fa-triangle-exclamation text-red-400 mt-0.5 text-xs"></i>
+            <p className="text-red-300 text-[11px] font-medium leading-relaxed">{ocrError || summarizeError}</p>
+          </div>
+        )}
+
+        {/* ─── ACTION BAR ─── */}
+        <div className="relative z-10 flex flex-col sm:flex-row items-center gap-2 pt-3 mt-auto flex-shrink-0">
+          
+          {/* Upload Group */}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {!showUploadOptions ? (
+              <button
+                onClick={() => setShowUploadOptions(true)}
+                disabled={isOcrLoading || isSummarizing}
+                className="h-9 px-4 flex items-center justify-center gap-2.5 text-[12px] font-bold text-white bg-white/5 border border-white/10 rounded-none hover:bg-white/10 transition-all disabled:opacity-50"
+              >
+                <i className="fa-solid fa-cloud-arrow-up text-indigo-400"></i>
+                Tải JD lên
+              </button>
+            ) : (
+              <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-4">
+                {isOcrLoading ? (
+                  <div className="h-9 px-3 flex items-center gap-2.5 bg-slate-900 border border-white/10 rounded-none text-[10px] font-bold text-white">
+                    <i className="fa-solid fa-spinner fa-spin text-indigo-400"></i>
+                    {ocrMessage || 'Parsing...'}
+                  </div>
                 ) : (
                   <>
-                    {isOcrLoading ? (
-                      <div className="flex-1 h-11 px-4 flex items-center justify-center text-[13px] text-white bg-slate-800 border border-slate-700">
-                        <i className="fa-solid fa-spinner fa-spin mr-2 text-cyan-400"></i>
-                        <span className="truncate">{ocrMessage || 'Đang quét OCR...'}</span>
-                      </div>
-                    ) : (
-                      <label
-                        htmlFor="ocr-jd-input"
-                        title="Từ PDF/DOCX/PNG/JPG"
-                        className="flex-1 cursor-pointer h-11 px-4 flex items-center justify-center gap-2 text-sm font-medium text-white bg-slate-800 border border-slate-700 hover:border-cyan-500 transition-all"
-                      >
-                        <i className="fa-solid fa-folder-open text-cyan-400"></i>
-                        <span className="hidden sm:inline">Folder</span>
-                        <input
-                          id="ocr-jd-input"
-                          type="file"
-                          className="hidden"
-                          accept=".pdf,.docx,.png,.jpg,.jpeg"
-                          onChange={handleOcrFileChange}
-                          onClick={(e) => { (e.target as HTMLInputElement).value = '' }}
-                        />
-                      </label>
-                    )}
-
-                    <button
-                      onClick={handleGoogleDriveSelect}
-                      disabled={isOcrLoading || isSummarizing}
-                      title="Từ Google Drive"
-                      className="flex-1 h-11 px-4 flex items-center justify-center gap-2 text-sm font-medium text-white bg-slate-800 border border-slate-700 hover:border-green-500 transition-all"
-                    >
-                      <i className="fa-brands fa-google-drive text-green-400"></i>
-                      <span className="hidden sm:inline">Drive</span>
+                    <label className="h-9 w-9 flex items-center justify-center bg-white/5 border border-white/10 rounded-none cursor-pointer hover:bg-indigo-500/20 transition-all text-slate-400 hover:text-indigo-400">
+                      <i className="fa-solid fa-folder-open text-sm"></i>
+                      <input type="file" className="hidden" accept=".pdf,.docx,.png,.jpg,.jpeg" onChange={handleOcrFileChange} />
+                    </label>
+                    <button onClick={handleGoogleDriveSelect} className="h-9 w-9 flex items-center justify-center bg-white/5 border border-white/10 rounded-none hover:bg-emerald-500/20 transition-all text-slate-400 hover:text-emerald-400">
+                      <i className="fa-brands fa-google-drive text-sm"></i>
                     </button>
-
-                    <button
-                      onClick={() => setShowUploadOptions(false)}
-                      className="w-11 h-11 flex items-center justify-center text-slate-500 hover:text-white bg-slate-800 border border-slate-700 hover:border-slate-500 transition-all"
-                    >
+                    <button onClick={() => setShowUploadOptions(false)} className="h-9 w-9 flex items-center justify-center text-slate-500 hover:text-white">
                       <i className="fa-solid fa-xmark"></i>
                     </button>
                   </>
                 )}
               </div>
+            )}
+          </div>
 
-              {/* AI Optimizer */}
-              <button
-                onClick={handleSummarizeJD}
-                disabled={isOcrLoading || isSummarizing || jdText.trim().length < 200}
-                title="Dùng AI để tóm tắt và cấu trúc lại JD"
-                className="flex-1 h-11 px-4 flex items-center justify-center gap-2 text-sm font-medium text-white bg-purple-900/50 border border-purple-700/60 hover:border-purple-500 hover:bg-purple-900/70 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <i className="fa-solid fa-brain text-purple-300"></i>
-                <span>AI Optimizer</span>
-              </button>
+          <div className="flex items-center gap-2 w-full sm:flex-1">
+             {/* AI Optimizer */}
+            <button
+              onClick={handleSummarizeJD}
+              disabled={isOcrLoading || isSummarizing || jdText.trim().length < 200}
+              className="flex-1 h-9 px-4 flex items-center justify-center gap-2.5 text-[12px] font-bold text-purple-200 bg-purple-600/20 border border-purple-500/30 rounded-none hover:bg-purple-600/30 transition-all disabled:opacity-40"
+            >
+              <i className="fa-solid fa-wand-magic-sparkles"></i>
+              <span>{isSummarizing ? 'Đang tối ưu...' : 'AI Optimizer'}</span>
+            </button>
 
-              {/* Complete */}
-              <button
-                onClick={onComplete}
-                disabled={!isCompleteEnabled}
-                className="flex-1 h-11 px-4 flex items-center justify-center gap-2 text-sm font-semibold text-slate-900 bg-gradient-to-r from-cyan-400 to-emerald-400 hover:from-cyan-300 hover:to-emerald-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <i className="fa-solid fa-arrow-right"></i>
-                <span>Hoàn thành</span>
-              </button>
-
-            </div>
+            {/* Complete */}
+            <button
+              onClick={handleComplete}
+              disabled={!isCompleteEnabled}
+              className="flex-1 h-9 px-6 flex items-center justify-center gap-2.5 text-[12px] font-black text-slate-950 bg-gradient-to-r from-indigo-400 via-cyan-400 to-emerald-400 rounded-none hover:brightness-110 active:scale-[0.98] transition-all disabled:grayscale disabled:opacity-50"
+            >
+              <span>HOÀN THÀNH</span>
+              <i className="fa-solid fa-chevron-right text-[9px]"></i>
+            </button>
           </div>
         </div>
-
       </div>
     </section>
   );
