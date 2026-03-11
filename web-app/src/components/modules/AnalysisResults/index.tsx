@@ -230,6 +230,7 @@ const CandidateDetailModal: React.FC<{
   jdText: string;
 }> = ({ candidate, onClose, jdText }) => {
   const [currentPage, setCurrentPage] = useState(1);
+  const [expandedCriteria, setExpandedCriteria] = useState<Record<string, Record<string, boolean>>>({});
 
   if (!candidate) return null;
 
@@ -239,6 +240,19 @@ const CandidateDetailModal: React.FC<{
 
   const goToNext = () => setCurrentPage(2);
   const goToBack = () => setCurrentPage(1);
+
+  const handleToggleCriterion = (candidateId: string, criterion: string) => {
+    setExpandedCriteria(prev => {
+      const candidateExpanded = prev[candidateId] || {};
+      return {
+        ...prev,
+        [candidateId]: {
+          ...candidateExpanded,
+          [criterion]: !candidateExpanded[criterion]
+        }
+      };
+    });
+  };
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
@@ -325,8 +339,8 @@ const CandidateDetailModal: React.FC<{
               <div className="space-y-6">
                 <ExpandedContent
                   candidate={candidate}
-                  expandedCriteria={{}}
-                  onToggleCriterion={() => { }}
+                  expandedCriteria={expandedCriteria}
+                  onToggleCriterion={handleToggleCriterion}
                   jdText={jdText}
                   viewMode="summary"
                 />
@@ -353,11 +367,8 @@ const CandidateDetailModal: React.FC<{
               
               <ExpandedContent
                 candidate={candidate}
-                expandedCriteria={{ [candidate.id]: { 'Phù hợp JD (Job Fit)': true } }}
-                onToggleCriterion={(cid, crit) => {
-                  // Local toggle hack for detail view if needed, or just use the parent's logic
-                  // For now, keep it simple as the user didn't ask for state persist here
-                }}
+                expandedCriteria={expandedCriteria}
+                onToggleCriterion={handleToggleCriterion}
                 jdText={jdText}
                 viewMode="details"
               />
