@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { JDHistoryService } from '../../services/storage/jdHistoryService';
-import type { JDTemplate } from '../../types';
+import React, { useState, useEffect } from "react";
+import { JDHistoryService } from "../../services/storage/jdHistoryService";
+import type { JDTemplate } from "../../types";
 
 interface HistorySelectorProps {
   uid: string;
@@ -8,7 +8,11 @@ interface HistorySelectorProps {
   className?: string;
 }
 
-const HistorySelector: React.FC<HistorySelectorProps> = ({ uid, onSelect, className = '' }) => {
+const HistorySelector: React.FC<HistorySelectorProps> = ({
+  uid,
+  onSelect,
+  className = "",
+}) => {
   const [historyItems, setHistoryItems] = useState<JDTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -20,26 +24,28 @@ const HistorySelector: React.FC<HistorySelectorProps> = ({ uid, onSelect, classN
       const fetchedHistory = await JDHistoryService.getUserHistory(uid);
       setHistoryItems(fetchedHistory);
     } catch (error) {
-      console.error('Failed to load history:', error);
+      console.error("Failed to load history:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    if (isOpen) {
-      loadHistory();
-    }
+    if (isOpen) loadHistory();
   }, [isOpen, uid]);
 
   return (
     <div className={`relative ${className}`}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 bg-slate-800/40 border border-slate-700/50 rounded-none text-sm text-slate-400 hover:text-cyan-400 hover:border-cyan-500/50 transition-all"
+        className={`h-7 px-3 flex items-center gap-1.5 rounded-lg border text-[11px] font-semibold transition-all ${
+          isOpen
+            ? "bg-violet-500/15 border-violet-500/40 text-violet-300"
+            : "bg-slate-800/60 border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-600 hover:bg-slate-800"
+        }`}
       >
-        <i className="fa-solid fa-clock-rotate-left"></i>
-        <span>Lịch sử JD</span>
+        <i className="fa-solid fa-clock-rotate-left text-xs" />
+        <span>Lịch sử</span>
       </button>
 
       {isOpen && (
@@ -47,24 +53,35 @@ const HistorySelector: React.FC<HistorySelectorProps> = ({ uid, onSelect, classN
           <div
             className="fixed inset-0 z-40"
             onClick={() => setIsOpen(false)}
-          ></div>
-          <div className="absolute right-0 top-full mt-1 w-72 bg-slate-900 border border-slate-700 rounded-none shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-            <div className="p-3 border-b border-slate-800 bg-slate-800/50 flex items-center justify-between">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Lịch sử gần đây</h3>
-              <button onClick={() => loadHistory()} className="text-slate-500 hover:text-cyan-400 transition-colors">
-                <i className={`fa-solid fa-rotate-right text-[10px] ${isLoading ? 'fa-spin' : ''}`}></i>
+          />
+          <div className="absolute right-0 top-full mt-2 w-72 bg-slate-900 border border-slate-700/60 rounded-xl shadow-2xl shadow-black/40 z-50 overflow-hidden">
+            {/* Header */}
+            <div className="px-3.5 py-2.5 border-b border-slate-800 flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                Lịch sử gần đây
+              </span>
+              <button
+                onClick={() => loadHistory()}
+                className="w-6 h-6 rounded-md flex items-center justify-center text-slate-600 hover:text-violet-400 hover:bg-slate-800 transition-all"
+              >
+                <i
+                  className={`fa-solid fa-rotate-right text-[10px] ${isLoading ? "fa-spin" : ""}`}
+                />
               </button>
             </div>
 
-            <div className="max-h-80 overflow-y-auto custom-scrollbar">
+            <div className="max-h-72 overflow-y-auto custom-scrollbar">
               {isLoading ? (
-                <div className="p-4 text-center">
-                  <i className="fa-solid fa-circle-notch fa-spin text-cyan-500 mb-2"></i>
-                  <p className="text-xs text-slate-500">Đang tải...</p>
+                <div className="py-8 text-center">
+                  <i className="fa-solid fa-circle-notch fa-spin text-violet-400 text-lg mb-2" />
+                  <p className="text-[11px] text-slate-500">Đang tải...</p>
                 </div>
               ) : historyItems.length === 0 ? (
-                <div className="p-4 text-center">
-                  <p className="text-xs text-slate-500 italic">Chưa có lịch sử</p>
+                <div className="py-8 text-center">
+                  <i className="fa-regular fa-clock text-2xl text-slate-700 mb-2" />
+                  <p className="text-[11px] text-slate-500 italic">
+                    Chưa có lịch sử
+                  </p>
                 </div>
               ) : (
                 historyItems.map((item) => (
@@ -74,18 +91,22 @@ const HistorySelector: React.FC<HistorySelectorProps> = ({ uid, onSelect, classN
                       onSelect(item);
                       setIsOpen(false);
                     }}
-                    className="w-full text-left p-3 hover:bg-slate-800 border-b border-slate-800/50 last:border-0 transition-colors group"
+                    className="w-full text-left px-3.5 py-3 hover:bg-slate-800/60 border-b border-slate-800/40 last:border-0 transition-colors group"
                   >
-                    <div className="flex justify-between items-start mb-0.5">
-                      <p className="text-sm font-medium text-slate-200 group-hover:text-cyan-400 truncate flex-1">
-                        {item.jobPosition || 'Không tên'}
+                    <div className="flex justify-between items-start mb-1">
+                      <p className="text-[12px] font-semibold text-slate-200 group-hover:text-violet-300 truncate flex-1 transition-colors">
+                        {item.jobPosition || "Không tên"}
                       </p>
                       <span className="text-[9px] text-slate-600 shrink-0 ml-2">
-                        {item.createdAt?.seconds ? new Date(item.createdAt.seconds * 1000).toLocaleDateString('vi-VN') : ''}
+                        {item.createdAt?.seconds
+                          ? new Date(
+                              item.createdAt.seconds * 1000,
+                            ).toLocaleDateString("vi-VN")
+                          : ""}
                       </span>
                     </div>
-                    <p className="text-[10px] text-slate-500 line-clamp-2 leading-relaxed h-[30px]">
-                      {item.jdText}
+                    <p className="text-[10px] text-slate-600 line-clamp-1 leading-relaxed group-hover:text-slate-500 transition-colors">
+                      {item.jdText?.slice(0, 80)}...
                     </p>
                   </button>
                 ))

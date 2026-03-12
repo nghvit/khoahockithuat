@@ -1,300 +1,450 @@
-import React, { useMemo } from 'react';
-import type { HardFilters } from '../../../types';
+import React from "react";
+import type { HardFilters } from "../../../types";
 
 interface HardFilterPanelProps {
-    hardFilters: HardFilters;
-    setHardFilters: React.Dispatch<React.SetStateAction<HardFilters>>;
+  hardFilters: HardFilters;
+  setHardFilters: React.Dispatch<React.SetStateAction<HardFilters>>;
 }
 
 type MandatoryKey = Extract<keyof HardFilters, `${string}Mandatory`>;
 type ValueKey = Exclude<keyof HardFilters, MandatoryKey>;
 
-const HardFilterPanel: React.FC<HardFilterPanelProps> = ({ hardFilters, setHardFilters }) => {
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { id, value } = e.target;
-        setHardFilters((prev) => ({
-            ...prev,
-            [id]: value,
-        }));
-    };
+const HardFilterPanel: React.FC<HardFilterPanelProps> = ({
+  hardFilters,
+  setHardFilters,
+}) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
+    const { id, value } = e.target;
+    setHardFilters((prev) => ({ ...prev, [id]: value }));
+  };
 
-    const handleMandatoryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { id, checked } = e.target;
-        setHardFilters((prev) => ({
-            ...prev,
-            [id]: checked,
-        }));
-    };
+  const handleMandatoryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, checked } = e.target;
+    setHardFilters((prev) => ({ ...prev, [id]: checked }));
+  };
 
-    const hasValue = (val: unknown) => {
-        if (typeof val === 'string') return val.trim().length > 0;
-        return Boolean(val);
-    };
+  const hasValue = (val: unknown) => {
+    if (typeof val === "string") return val.trim().length > 0;
+    return Boolean(val);
+  };
 
-    const inputClasses = (isMandatory: boolean, valuePresent: boolean) =>
-        `w-full bg-transparent border-0 border-b py-2 text-sm text-slate-200 placeholder-slate-700 transition-all focus:outline-none focus:ring-0 ${isMandatory
-            ? valuePresent
-                ? 'border-cyan-500/40 focus:border-cyan-400 shadow-[0_1px_0_0_rgba(6,182,212,0.1)]'
-                : 'border-red-500/40 focus:border-red-400'
-            : 'border-slate-800 focus:border-slate-600'
-        }`;
-
-    const selectFieldConfigs: Array<{
-        id: ValueKey;
-        label: string;
-        placeholder: string;
-        mandatoryKey: MandatoryKey;
-        options: { value: string; label: string }[];
-    }> = [
-            {
-                id: 'location',
-                label: 'Địa điểm làm việc',
-                placeholder: 'Chọn địa điểm',
-                mandatoryKey: 'locationMandatory',
-                options: [
-                    { value: '', label: 'Chọn địa điểm' },
-                    { value: 'Hà Nội', label: 'Hà Nội' },
-                    { value: 'Hải Phòng', label: 'Hải Phòng' },
-                    { value: 'Đà Nẵng', label: 'Đà Nẵng' },
-                    { value: 'Thành phố Hồ Chí Minh', label: 'TP. Hồ Chí Minh' },
-                    { value: 'Remote', label: 'Remote' },
-                ],
-            },
-            {
-                id: 'minExp',
-                label: 'Kinh nghiệm tối thiểu',
-                placeholder: 'Không yêu cầu',
-                mandatoryKey: 'minExpMandatory',
-                options: [
-                    { value: '', label: 'Không yêu cầu' },
-                    { value: '1', label: '≥ 1 năm' },
-                    { value: '2', label: '≥ 2 năm' },
-                    { value: '3', label: '≥ 3 năm' },
-                    { value: '5', label: '≥ 5 năm' },
-                ],
-            },
-            {
-                id: 'seniority',
-                label: 'Cấp bậc & Seniority',
-                placeholder: 'Không yêu cầu',
-                mandatoryKey: 'seniorityMandatory',
-                options: [
-                    { value: '', label: 'Không yêu cầu' },
-                    { value: 'Intern', label: 'Intern' },
-                    { value: 'Junior', label: 'Junior' },
-                    { value: 'Mid-level', label: 'Mid-level' },
-                    { value: 'Senior', label: 'Senior' },
-                    { value: 'Lead', label: 'Lead' },
-                ],
-            },
-            {
-                id: 'workFormat',
-                label: 'Hình thức làm việc',
-                placeholder: 'Không yêu cầu',
-                mandatoryKey: 'workFormatMandatory',
-                options: [
-                    { value: '', label: 'Không yêu cầu' },
-                    { value: 'Onsite', label: 'Onsite' },
-                    { value: 'Hybrid', label: 'Hybrid' },
-                    { value: 'Remote', label: 'Remote' },
-                ],
-            },
-            {
-                id: 'contractType',
-                label: 'Loại hợp đồng',
-                placeholder: 'Không yêu cầu',
-                mandatoryKey: 'contractTypeMandatory',
-                options: [
-                    { value: '', label: 'Không yêu cầu' },
-                    { value: 'Full-time', label: 'Full-time' },
-                    { value: 'Part-time', label: 'Part-time' },
-                    { value: 'Intern', label: 'Intern' },
-                    { value: 'Contract', label: 'Contract' },
-                ],
-            },
-        ];
-
-    const renderCompactField = (config: (typeof selectFieldConfigs)[number]) => {
-        const isMandatory = hardFilters[config.mandatoryKey];
-        const hasCurrentValue = hasValue(hardFilters[config.id]);
-
-        return (
-            <div key={config.id} className="flex flex-col group mt-4">
-                <div className="flex items-center justify-between mb-1">
-                    <label htmlFor={config.id} className="text-[11px] font-bold uppercase tracking-[0.15em] text-slate-500 group-focus-within:text-cyan-400 transition-colors">
-                        {config.label}
-                    </label>
-                    <div className="flex items-center gap-2">
-                        <input
-                            type="checkbox"
-                            id={config.mandatoryKey}
-                            checked={Boolean(isMandatory)}
-                            onChange={handleMandatoryChange}
-                            className="w-3.5 h-3.5 rounded border-slate-700 bg-slate-900/50 text-cyan-500 focus:ring-0 transition-colors"
-                        />
-                        <label htmlFor={config.mandatoryKey} className={`text-[10px] uppercase font-bold tracking-wider cursor-pointer transition-colors ${isMandatory ? 'text-cyan-400' : 'text-slate-600 hover:text-slate-400'}`}>
-                            Bắt buộc
-                        </label>
-                    </div>
-                </div>
-                <select
-                    id={config.id}
-                    value={hardFilters[config.id]}
-                    onChange={handleChange}
-                    className={inputClasses(Boolean(isMandatory), hasCurrentValue)}
-                >
-                    {config.options.map((option) => (
-                        <option key={option.value ?? option.label} value={option.value} className="bg-slate-900">
-                            {option.label}
-                        </option>
-                    ))}
-                </select>
-            </div>
-        );
-    };
+  // ── Shared field wrapper ────────────────────────────────────────────────
+  const FieldCard = ({
+    id,
+    mandatoryKey,
+    label,
+    icon,
+    children,
+  }: {
+    id: string;
+    mandatoryKey: MandatoryKey;
+    label: string;
+    icon: string;
+    children: React.ReactNode;
+  }) => {
+    const isMandatory = Boolean(hardFilters[mandatoryKey]);
 
     return (
-        <div className="space-y-12 animate-in fade-in duration-700">
-            {/* Group 1: Basic Info */}
-            <div className="flex flex-col">
-                <h5 className="text-[11px] font-bold text-cyan-400 uppercase tracking-[0.25em] mb-6 flex items-center gap-3">
-                    <span className="w-8 h-[1px] bg-cyan-500/30"></span>
-                    Điều kiện cơ bản
-                </h5>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
-                    {selectFieldConfigs.map(renderCompactField)}
-                </div>
+      <div
+        className={`group relative rounded-xl border transition-all duration-200 ${
+          isMandatory
+            ? "border-indigo-500/40 bg-indigo-500/5"
+            : "border-slate-800 bg-slate-900/60 hover:border-slate-700"
+        }`}
+      >
+        {/* Mandatory accent bar */}
+        {isMandatory && (
+          <div className="absolute left-0 top-3 bottom-3 w-0.5 rounded-r-full bg-indigo-500" />
+        )}
+
+        <div className="px-4 pt-3 pb-3.5 space-y-2.5">
+          {/* Header row */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <i
+                className={`fa-solid ${icon} text-[10px] ${isMandatory ? "text-indigo-400" : "text-slate-600"} transition-colors`}
+              />
+              <label
+                htmlFor={id}
+                className={`text-[11px] font-semibold uppercase tracking-wider cursor-pointer transition-colors ${
+                  isMandatory ? "text-indigo-300" : "text-slate-500"
+                }`}
+              >
+                {label}
+              </label>
             </div>
 
-            {/* Group 2: Context & Quality */}
-            <div className="flex flex-col">
-                <h5 className="text-[11px] font-bold text-cyan-400 uppercase tracking-[0.25em] mb-6 flex items-center gap-3">
-                    <span className="w-8 h-[1px] bg-cyan-500/30"></span>
-                    Chuyên môn & Yêu cầu
-                </h5>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
-                    {/* Industry */}
-                    <div className="flex flex-col group">
-                        <div className="flex items-center justify-between mb-1">
-                            <label htmlFor="industry" className="text-[11px] font-bold uppercase tracking-[0.15em] text-slate-500 group-focus-within:text-cyan-400 transition-colors">Ngành nghề</label>
-                            <div className="flex items-center gap-2">
-                                <input
-                                    type="checkbox"
-                                    id="industryMandatory"
-                                    checked={hardFilters.industryMandatory}
-                                    onChange={handleMandatoryChange}
-                                    className="w-3.5 h-3.5 rounded border-slate-700 bg-slate-900/50 text-cyan-500 focus:ring-0"
-                                />
-                                <label htmlFor="industryMandatory" className={`text-[10px] uppercase font-bold tracking-wider cursor-pointer ${hardFilters.industryMandatory ? 'text-cyan-400' : 'text-slate-600'}`}>Bắt buộc</label>
-                            </div>
-                        </div>
-                        <input
-                            type="text"
-                            id="industry"
-                            value={hardFilters.industry}
-                            onChange={handleChange}
-                            placeholder="Ví dụ: Fintech, SaaS..."
-                            className={inputClasses(hardFilters.industryMandatory, hasValue(hardFilters.industry))}
-                        />
-                    </div>
+            {/* Toggle switch */}
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <span
+                className={`text-[10px] font-semibold tracking-wide transition-colors ${isMandatory ? "text-indigo-400" : "text-slate-600"}`}
+              >
+                BẮT BUỘC
+              </span>
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  id={mandatoryKey}
+                  checked={isMandatory}
+                  onChange={handleMandatoryChange}
+                  className="sr-only"
+                />
+                <div
+                  className={`w-8 h-4 rounded-full transition-all duration-200 ${isMandatory ? "bg-indigo-600" : "bg-slate-700"}`}
+                />
+                <div
+                  className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow-sm transition-all duration-200 ${isMandatory ? "translate-x-4" : "translate-x-0"}`}
+                />
+              </div>
+            </label>
+          </div>
 
-                    {/* Language */}
-                    <div className="flex flex-col group">
-                        <div className="flex items-center justify-between mb-1">
-                            <label htmlFor="language" className="text-[11px] font-bold uppercase tracking-[0.15em] text-slate-500 group-focus-within:text-cyan-400 transition-colors">Ngôn ngữ</label>
-                            <div className="flex items-center gap-2">
-                                <input
-                                    type="checkbox"
-                                    id="languageMandatory"
-                                    checked={hardFilters.languageMandatory}
-                                    onChange={handleMandatoryChange}
-                                    className="w-3.5 h-3.5 rounded border-slate-700 bg-slate-900/50 text-cyan-500 focus:ring-0"
-                                />
-                                <label htmlFor="languageMandatory" className={`text-[10px] uppercase font-bold tracking-wider cursor-pointer ${hardFilters.languageMandatory ? 'text-cyan-400' : 'text-slate-600'}`}>Bắt buộc</label>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-[2fr_1fr] gap-4">
-                            <input
-                                type="text"
-                                id="language"
-                                value={hardFilters.language}
-                                onChange={handleChange}
-                                placeholder="Tên ngôn ngữ"
-                                className={inputClasses(hardFilters.languageMandatory, hasValue(hardFilters.language))}
-                            />
-                            <select
-                                id="languageLevel"
-                                value={hardFilters.languageLevel}
-                                onChange={handleChange}
-                                className={inputClasses(false, hasValue(hardFilters.languageLevel))}
-                            >
-                                <option value="" className="bg-slate-900">Mức độ</option>
-                                <option value="B1" className="bg-slate-900">B1</option>
-                                <option value="B2" className="bg-slate-900">B2</option>
-                                <option value="C1" className="bg-slate-900">C1</option>
-                                <option value="C2" className="bg-slate-900">C2</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    {/* Education */}
-                    <div className="flex flex-col group">
-                        <div className="flex items-center justify-between mb-1">
-                            <label htmlFor="education" className="text-[11px] font-bold uppercase tracking-[0.15em] text-slate-500 group-focus-within:text-cyan-400 transition-colors">Học vấn</label>
-                            <div className="flex items-center gap-2">
-                                <input
-                                    type="checkbox"
-                                    id="educationMandatory"
-                                    checked={hardFilters.educationMandatory}
-                                    onChange={handleMandatoryChange}
-                                    className="w-3.5 h-3.5 rounded border-slate-700 bg-slate-900/50 text-cyan-500 focus:ring-0"
-                                />
-                                <label htmlFor="educationMandatory" className={`text-[10px] uppercase font-bold tracking-wider cursor-pointer ${hardFilters.educationMandatory ? 'text-cyan-400' : 'text-slate-600'}`}>Bắt buộc</label>
-                            </div>
-                        </div>
-                        <select
-                            id="education"
-                            value={hardFilters.education}
-                            onChange={handleChange}
-                            className={inputClasses(hardFilters.educationMandatory, hasValue(hardFilters.education))}
-                        >
-                            <option value="" className="bg-slate-900">Không yêu cầu</option>
-                            <option value="High School" className="bg-slate-900">Tốt nghiệp THPT</option>
-                            <option value="Associate" className="bg-slate-900">Cao đẳng</option>
-                            <option value="Bachelor" className="bg-slate-900">Cử nhân</option>
-                            <option value="Master" className="bg-slate-900">Thạc sĩ</option>
-                            <option value="PhD" className="bg-slate-900">Tiến sĩ</option>
-                        </select>
-                    </div>
-
-                    {/* Certificates */}
-                    <div className="flex flex-col group">
-                        <div className="flex items-center justify-between mb-1">
-                            <label htmlFor="certificates" className="text-[11px] font-bold uppercase tracking-[0.15em] text-slate-500 group-focus-within:text-cyan-400 transition-colors">Chứng chỉ</label>
-                            <div className="flex items-center gap-2">
-                                <input
-                                    type="checkbox"
-                                    id="certificatesMandatory"
-                                    checked={hardFilters.certificatesMandatory}
-                                    onChange={handleMandatoryChange}
-                                    className="w-3.5 h-3.5 rounded border-slate-700 bg-slate-900/50 text-cyan-500 focus:ring-0"
-                                />
-                                <label htmlFor="certificatesMandatory" className={`text-[10px] uppercase font-bold tracking-wider cursor-pointer ${hardFilters.certificatesMandatory ? 'text-cyan-400' : 'text-slate-600'}`}>Bắt buộc</label>
-                            </div>
-                        </div>
-                        <input
-                            type="text"
-                            id="certificates"
-                            value={hardFilters.certificates}
-                            onChange={handleChange}
-                            placeholder="Ví dụ: PMP, AWS, IELTS..."
-                            className={inputClasses(hardFilters.certificatesMandatory, hasValue(hardFilters.certificates))}
-                        />
-                    </div>
-                </div>
-            </div>
+          {/* Input */}
+          <div>{children}</div>
         </div>
+      </div>
     );
+  };
+
+  // ── Shared input/select styles ──────────────────────────────────────────
+  const inputBase =
+    "w-full h-8 px-3 rounded-lg text-[12.5px] text-slate-200 placeholder-slate-600 bg-slate-800/80 border border-slate-700/60 focus:outline-none focus:border-indigo-500/60 focus:bg-slate-800 transition-all";
+  const selectBase = `${inputBase} appearance-none cursor-pointer`;
+
+  const SelectField = ({
+    id,
+    value,
+    options,
+  }: {
+    id: ValueKey;
+    value: string;
+    options: { value: string; label: string }[];
+  }) => (
+    <div className="relative">
+      <select
+        id={id}
+        value={value}
+        onChange={handleChange}
+        className={selectBase}
+      >
+        {options.map((o) => (
+          <option
+            key={o.value || o.label}
+            value={o.value}
+            className="bg-slate-900"
+          >
+            {o.label}
+          </option>
+        ))}
+      </select>
+      <i className="fa-solid fa-chevron-down text-slate-600 text-[9px] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+    </div>
+  );
+
+  const TextField = ({
+    id,
+    value,
+    placeholder,
+  }: {
+    id: ValueKey;
+    value: string;
+    placeholder: string;
+  }) => (
+    <input
+      type="text"
+      id={id}
+      value={value}
+      onChange={handleChange}
+      placeholder={placeholder}
+      className={inputBase}
+    />
+  );
+
+  return (
+    <div className="space-y-5 animate-in fade-in duration-300">
+      {/* ── Section 1: Điều kiện cơ bản ─────────────────────────────── */}
+      <SectionHeader icon="fa-briefcase" label="Điều kiện cơ bản" />
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <FieldCard
+          id="location"
+          mandatoryKey="locationMandatory"
+          label="Địa điểm"
+          icon="fa-location-dot"
+        >
+          <SelectField
+            id="location"
+            value={hardFilters.location}
+            options={[
+              { value: "", label: "Không yêu cầu" },
+              { value: "Hà Nội", label: "Hà Nội" },
+              { value: "Hải Phòng", label: "Hải Phòng" },
+              { value: "Đà Nẵng", label: "Đà Nẵng" },
+              { value: "Thành phố Hồ Chí Minh", label: "TP. Hồ Chí Minh" },
+              { value: "Remote", label: "Remote" },
+            ]}
+          />
+        </FieldCard>
+
+        <FieldCard
+          id="minExp"
+          mandatoryKey="minExpMandatory"
+          label="Kinh nghiệm tối thiểu"
+          icon="fa-clock-rotate-left"
+        >
+          <SelectField
+            id="minExp"
+            value={hardFilters.minExp}
+            options={[
+              { value: "", label: "Không yêu cầu" },
+              { value: "1", label: "≥ 1 năm" },
+              { value: "2", label: "≥ 2 năm" },
+              { value: "3", label: "≥ 3 năm" },
+              { value: "5", label: "≥ 5 năm" },
+            ]}
+          />
+        </FieldCard>
+
+        <FieldCard
+          id="seniority"
+          mandatoryKey="seniorityMandatory"
+          label="Cấp bậc & Seniority"
+          icon="fa-layer-group"
+        >
+          <SelectField
+            id="seniority"
+            value={hardFilters.seniority}
+            options={[
+              { value: "", label: "Không yêu cầu" },
+              { value: "Intern", label: "Intern" },
+              { value: "Junior", label: "Junior" },
+              { value: "Mid-level", label: "Mid-level" },
+              { value: "Senior", label: "Senior" },
+              { value: "Lead", label: "Lead" },
+            ]}
+          />
+        </FieldCard>
+
+        <FieldCard
+          id="workFormat"
+          mandatoryKey="workFormatMandatory"
+          label="Hình thức làm việc"
+          icon="fa-building"
+        >
+          <SelectField
+            id="workFormat"
+            value={hardFilters.workFormat}
+            options={[
+              { value: "", label: "Không yêu cầu" },
+              { value: "Onsite", label: "Onsite" },
+              { value: "Hybrid", label: "Hybrid" },
+              { value: "Remote", label: "Remote" },
+            ]}
+          />
+        </FieldCard>
+
+        <FieldCard
+          id="contractType"
+          mandatoryKey="contractTypeMandatory"
+          label="Loại hợp đồng"
+          icon="fa-file-contract"
+        >
+          <SelectField
+            id="contractType"
+            value={hardFilters.contractType}
+            options={[
+              { value: "", label: "Không yêu cầu" },
+              { value: "Full-time", label: "Full-time" },
+              { value: "Part-time", label: "Part-time" },
+              { value: "Intern", label: "Intern" },
+              { value: "Contract", label: "Contract" },
+            ]}
+          />
+        </FieldCard>
+      </div>
+
+      {/* ── Section 2: Chuyên môn & Yêu cầu ─────────────────────────── */}
+      <SectionHeader icon="fa-graduation-cap" label="Chuyên môn & Yêu cầu" />
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <FieldCard
+          id="industry"
+          mandatoryKey="industryMandatory"
+          label="Ngành nghề"
+          icon="fa-industry"
+        >
+          <TextField
+            id="industry"
+            value={hardFilters.industry}
+            placeholder="Ví dụ: Fintech, SaaS, E-commerce..."
+          />
+        </FieldCard>
+
+        <FieldCard
+          id="language"
+          mandatoryKey="languageMandatory"
+          label="Ngôn ngữ"
+          icon="fa-language"
+        >
+          <div className="grid grid-cols-[1fr_auto] gap-2">
+            <TextField
+              id="language"
+              value={hardFilters.language}
+              placeholder="Tên ngôn ngữ"
+            />
+            <div className="relative">
+              <select
+                id="languageLevel"
+                value={hardFilters.languageLevel}
+                onChange={handleChange}
+                className="h-8 pl-3 pr-7 rounded-lg text-[12px] text-slate-300 bg-slate-800/80 border border-slate-700/60 focus:outline-none focus:border-indigo-500/60 transition-all appearance-none cursor-pointer"
+              >
+                <option value="" className="bg-slate-900">
+                  Mức độ
+                </option>
+                <option value="B1" className="bg-slate-900">
+                  B1
+                </option>
+                <option value="B2" className="bg-slate-900">
+                  B2
+                </option>
+                <option value="C1" className="bg-slate-900">
+                  C1
+                </option>
+                <option value="C2" className="bg-slate-900">
+                  C2
+                </option>
+              </select>
+              <i className="fa-solid fa-chevron-down text-slate-600 text-[8px] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+          </div>
+        </FieldCard>
+
+        <FieldCard
+          id="education"
+          mandatoryKey="educationMandatory"
+          label="Học vấn"
+          icon="fa-user-graduate"
+        >
+          <SelectField
+            id="education"
+            value={hardFilters.education}
+            options={[
+              { value: "", label: "Không yêu cầu" },
+              { value: "High School", label: "Tốt nghiệp THPT" },
+              { value: "Associate", label: "Cao đẳng" },
+              { value: "Bachelor", label: "Cử nhân" },
+              { value: "Master", label: "Thạc sĩ" },
+              { value: "PhD", label: "Tiến sĩ" },
+            ]}
+          />
+        </FieldCard>
+
+        <FieldCard
+          id="certificates"
+          mandatoryKey="certificatesMandatory"
+          label="Chứng chỉ"
+          icon="fa-certificate"
+        >
+          <TextField
+            id="certificates"
+            value={hardFilters.certificates}
+            placeholder="Ví dụ: PMP, AWS, IELTS..."
+          />
+        </FieldCard>
+      </div>
+
+      {/* ── Section 3: Mức lương ──────────────────────────────────────── */}
+      <SectionHeader icon="fa-sack-dollar" label="Mức lương kỳ vọng" />
+
+      <div
+        className={`relative rounded-xl border transition-all duration-200 ${
+          hardFilters.salaryMandatory
+            ? "border-indigo-500/40 bg-indigo-500/5"
+            : "border-slate-800 bg-slate-900/60 hover:border-slate-700"
+        }`}
+      >
+        {hardFilters.salaryMandatory && (
+          <div className="absolute left-0 top-3 bottom-3 w-0.5 rounded-r-full bg-indigo-500" />
+        )}
+        <div className="px-4 pt-3 pb-3.5 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <i
+                className={`fa-solid fa-coins text-[10px] ${hardFilters.salaryMandatory ? "text-indigo-400" : "text-slate-600"}`}
+              />
+              <span
+                className={`text-[11px] font-semibold uppercase tracking-wider ${hardFilters.salaryMandatory ? "text-indigo-300" : "text-slate-500"}`}
+              >
+                Khoảng lương (VNĐ)
+              </span>
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <span
+                className={`text-[10px] font-semibold tracking-wide ${hardFilters.salaryMandatory ? "text-indigo-400" : "text-slate-600"}`}
+              >
+                BẮT BUỘC
+              </span>
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  id="salaryMandatory"
+                  checked={Boolean(hardFilters.salaryMandatory)}
+                  onChange={handleMandatoryChange}
+                  className="sr-only"
+                />
+                <div
+                  className={`w-8 h-4 rounded-full transition-all duration-200 ${hardFilters.salaryMandatory ? "bg-indigo-600" : "bg-slate-700"}`}
+                />
+                <div
+                  className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow-sm transition-all duration-200 ${hardFilters.salaryMandatory ? "translate-x-4" : "translate-x-0"}`}
+                />
+              </div>
+            </label>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <p className="text-[10px] text-slate-600 font-medium">Từ</p>
+              <input
+                type="number"
+                id="salaryMin"
+                value={hardFilters.salaryMin || ""}
+                onChange={handleChange}
+                placeholder="0"
+                className={inputBase}
+              />
+            </div>
+            <div className="space-y-1">
+              <p className="text-[10px] text-slate-600 font-medium">Đến</p>
+              <input
+                type="number"
+                id="salaryMax"
+                value={hardFilters.salaryMax || ""}
+                onChange={handleChange}
+                placeholder="Không giới hạn"
+                className={inputBase}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
+
+// ── Section header ────────────────────────────────────────────────────────────
+const SectionHeader = ({ icon, label }: { icon: string; label: string }) => (
+  <div className="flex items-center gap-3 pt-1">
+    <div className="w-6 h-6 rounded-md bg-slate-800 border border-slate-700/60 flex items-center justify-center flex-shrink-0">
+      <i className={`fa-solid ${icon} text-slate-400 text-[9px]`} />
+    </div>
+    <p className="text-[11.5px] font-semibold text-slate-400 uppercase tracking-widest">
+      {label}
+    </p>
+    <div className="flex-1 h-px bg-slate-800" />
+  </div>
+);
 
 export default HardFilterPanel;

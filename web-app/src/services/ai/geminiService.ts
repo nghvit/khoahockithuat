@@ -1,10 +1,22 @@
-import { GoogleGenAI, Type } from '@google/genai';
-import PQueue from 'p-queue';
-import type { Candidate, HardFilters, WeightCriteria, MainCriterion, SubCriterion, AnalysisRunData, ChatMessage } from '../../types';
-import { processFileToText } from '../data/ocrService';
-import { MODEL_NAME } from '../../constants';
-import { analysisCacheService } from '../cache/analysisCache';
-import { computeIndustrySimilarity, type IndustryEmbeddingInsight, type SupportedIndustry } from '../data/industryEmbeddingService';
+import { GoogleGenAI, Type } from "@google/genai";
+import PQueue from "p-queue";
+import type {
+  Candidate,
+  HardFilters,
+  WeightCriteria,
+  MainCriterion,
+  SubCriterion,
+  AnalysisRunData,
+  ChatMessage,
+} from "../../types";
+import { processFileToText } from "../data/ocrService";
+import { MODEL_NAME } from "../../constants";
+import { analysisCacheService } from "../cache/analysisCache";
+import {
+  computeIndustrySimilarity,
+  type IndustryEmbeddingInsight,
+  type SupportedIndustry,
+} from "../data/industryEmbeddingService";
 
 // Lazily initialize the AI client to allow the app to load even if the API key is not immediately available.
 let ai: GoogleGenAI | null = null;
@@ -20,57 +32,57 @@ const apiKeys = [
 const apiQueue = new PQueue({ concurrency: 2 }); // Limit to 2 concurrent requests
 
 const IT_KEYWORDS = [
-  'it',
-  'software',
-  'developer',
-  'engineer',
-  'backend',
-  'frontend',
-  'fullstack',
-  'full-stack',
-  'devops',
-  'data engineer',
-  'data scientist',
-  'kỹ sư',
-  'lập trình',
-  'qa',
-  'tester',
-  'product manager',
+  "it",
+  "software",
+  "developer",
+  "engineer",
+  "backend",
+  "frontend",
+  "fullstack",
+  "full-stack",
+  "devops",
+  "data engineer",
+  "data scientist",
+  "kỹ sư",
+  "lập trình",
+  "qa",
+  "tester",
+  "product manager",
 ];
 
 const SALES_KEYWORDS = [
-  'sales',
-  'kinh doanh',
-  'bán hàng',
-  'thị trường',
-  'business development',
-  'account manager',
-  'tư vấn',
-  'sale',
+  "sales",
+  "kinh doanh",
+  "bán hàng",
+  "thị trường",
+  "business development",
+  "account manager",
+  "tư vấn",
+  "sale",
 ];
 
 const MARKETING_KEYWORDS = [
-  'marketing',
-  'truyền thông',
-  'content',
-  'seo',
-  'social media',
-  'brand',
-  'quảng cáo',
-  'pr',
-  'digital',
+  "marketing",
+  "truyền thông",
+  "content",
+  "seo",
+  "social media",
+  "brand",
+  "quảng cáo",
+  "pr",
+  "digital",
 ];
 
 const DESIGN_KEYWORDS = [
-  'design',
-  'thiết kế',
-  'đồ họa',
-  'ui/ux',
-  'art',
-  'creative',
-  'sáng tạo',
-  'artist',
-  'designer',
+  "design",
+  "thiết kế",
+  "đồ họa",
+  "ui/ux",
+  "art",
+  "creative",
+  "sáng tạo",
+  "artist",
+  "designer",
 ];
 
 function getAi(): GoogleGenAI {
@@ -93,10 +105,20 @@ function switchToNextKey() {
   ai = null; // Reset to force re-init with new key
 }
 
-
-async function generateContentWithFallback(model: string, contents: any, config: any): Promise<any> {
+async function generateContentWithFallback(
+  model: string,
+  contents: any,
+  config: any,
+): Promise<any> {
   const startTime = Date.now();
-  const params = { model, contents: typeof contents === 'string' ? contents.substring(0, 100) + '...' : 'complex', config };
+  const params = {
+    model,
+    contents:
+      typeof contents === "string"
+        ? contents.substring(0, 100) + "..."
+        : "complex",
+    config,
+  };
 
   try {
     const result = await apiQueue.add(async () => {
@@ -114,17 +136,24 @@ async function generateContentWithFallback(model: string, contents: any, config:
           switchToNextKey();
         }
       }
-      throw new Error("All API keys failed. Please check your API keys and quota.");
+      throw new Error(
+        "All API keys failed. Please check your API keys and quota.",
+      );
     });
 
-    console.log('generateContent success:', Date.now() - startTime);
+    console.log("generateContent success:", Date.now() - startTime);
     return result;
   } catch (error) {
-    console.error('generateContent error:', params, null, Date.now() - startTime, error instanceof Error ? error.message : 'Unknown error');
+    console.error(
+      "generateContent error:",
+      params,
+      null,
+      Date.now() - startTime,
+      error instanceof Error ? error.message : "Unknown error",
+    );
     throw error;
   }
 }
-
 
 /**
  * Intelligently filters and structures raw JD text using AI.
@@ -132,15 +161,30 @@ async function generateContentWithFallback(model: string, contents: any, config:
  * @param rawJdText The raw text extracted from a JD file.
  * @returns A promise that resolves to a formatted string of the structured JD.
  */
-export const filterAndStructureJD = async (rawJdText: string, file?: File): Promise<string> => {
+export const filterAndStructureJD = async (
+  rawJdText: string,
+  file?: File,
+): Promise<string> => {
   const jdSchema = {
     type: Type.OBJECT,
     properties: {
-      "MucDichCongViec": { type: Type.STRING, description: "Nội dung mục đích công việc, hoặc chuỗi rỗng nếu không tìm thấy." },
-      "MoTaCongViec": { type: Type.STRING, description: "Nội dung mô tả công việc, hoặc chuỗi rỗng nếu không tìm thấy." },
-      "YeuCauCongViec": { type: Type.STRING, description: "Nội dung yêu cầu công việc, hoặc chuỗi rỗng nếu không tìm thấy." },
+      MucDichCongViec: {
+        type: Type.STRING,
+        description:
+          "Nội dung mục đích công việc, hoặc chuỗi rỗng nếu không tìm thấy.",
+      },
+      MoTaCongViec: {
+        type: Type.STRING,
+        description:
+          "Nội dung mô tả công việc, hoặc chuỗi rỗng nếu không tìm thấy.",
+      },
+      YeuCauCongViec: {
+        type: Type.STRING,
+        description:
+          "Nội dung yêu cầu công việc, hoặc chuỗi rỗng nếu không tìm thấy.",
+      },
     },
-    required: ["MucDichCongViec", "MoTaCongViec", "YeuCauCongViec"]
+    required: ["MucDichCongViec", "MoTaCongViec", "YeuCauCongViec"],
   };
 
   const prompt = `
@@ -172,12 +216,17 @@ export const filterAndStructureJD = async (rawJdText: string, file?: File): Prom
 
     const resultJson = JSON.parse(response.text);
 
-    const hasContent = resultJson.MucDichCongViec?.trim() || resultJson.MoTaCongViec?.trim() || resultJson.YeuCauCongViec?.trim();
+    const hasContent =
+      resultJson.MucDichCongViec?.trim() ||
+      resultJson.MoTaCongViec?.trim() ||
+      resultJson.YeuCauCongViec?.trim();
     if (!hasContent) {
-      throw new Error("Không thể trích xuất bất kỳ nội dung có ý nghĩa nào từ JD. Vui lòng kiểm tra file.");
+      throw new Error(
+        "Không thể trích xuất bất kỳ nội dung có ý nghĩa nào từ JD. Vui lòng kiểm tra file.",
+      );
     }
 
-    let formattedString = '';
+    let formattedString = "";
     if (resultJson.MucDichCongViec?.trim()) {
       formattedString += `MỤC ĐÍCH CÔNG VIỆC\n${resultJson.MucDichCongViec.trim()}\n\n`;
     }
@@ -191,20 +240,23 @@ export const filterAndStructureJD = async (rawJdText: string, file?: File): Prom
     const finalResult = formattedString.trim();
 
     return finalResult;
-
   } catch (error) {
     console.error("Lỗi khi lọc và cấu trúc JD:", error);
-    if (error instanceof Error && error.message.includes("Không thể trích xuất")) {
+    if (
+      error instanceof Error &&
+      error.message.includes("Không thể trích xuất")
+    ) {
       throw error;
     }
     throw new Error("AI không thể phân tích cấu trúc JD. Vui lòng thử lại.");
   }
 };
 
-
-export const extractJobPositionFromJD = async (jdText: string): Promise<string> => {
+export const extractJobPositionFromJD = async (
+  jdText: string,
+): Promise<string> => {
   if (!jdText || jdText.trim().length < 20) {
-    return '';
+    return "";
   }
 
   // Enhanced prompt with multiple extraction strategies
@@ -267,16 +319,16 @@ Chức danh công việc:`;
       thinkingConfig: { thinkingBudget: 0 },
     });
 
-    console.log('🤖 Gemini raw response for job position:', response.text); // Debug log
+    console.log("🤖 Gemini raw response for job position:", response.text); // Debug log
 
     let position = response.text.trim();
 
     // Post-processing to clean up the result
     position = position
-      .replace(/^["'`]+|["'`]+$/g, '') // Remove quotes
-      .replace(/^(chức danh|vị trí|position|job title)[:\s]*/i, '') // Remove labels
-      .replace(/[\n\r]+/g, ' ') // Replace newlines with space
-      .replace(/\s+/g, ' ') // Normalize spaces
+      .replace(/^["'`]+|["'`]+$/g, "") // Remove quotes
+      .replace(/^(chức danh|vị trí|position|job title)[:\s]*/i, "") // Remove labels
+      .replace(/[\n\r]+/g, " ") // Replace newlines with space
+      .replace(/\s+/g, " ") // Normalize spaces
       .trim();
 
     // Validate result
@@ -284,52 +336,116 @@ Chức danh công việc:`;
       // Expanded validation: should contain meaningful job-related words or common job patterns
       const jobKeywords = [
         // Technical roles
-        'developer', 'engineer', 'programmer', 'architect', 'devops', 'qa', 'tester',
-        // Business roles  
-        'manager', 'analyst', 'specialist', 'coordinator', 'assistant', 'executive', 'consultant',
+        "developer",
+        "engineer",
+        "programmer",
+        "architect",
+        "devops",
+        "qa",
+        "tester",
+        // Business roles
+        "manager",
+        "analyst",
+        "specialist",
+        "coordinator",
+        "assistant",
+        "executive",
+        "consultant",
         // Design/Creative
-        'designer', 'artist', 'creative', 'content', 'marketing', 'brand',
+        "designer",
+        "artist",
+        "creative",
+        "content",
+        "marketing",
+        "brand",
         // Leadership
-        'senior', 'junior', 'lead', 'director', 'head', 'chief', 'supervisor',
+        "senior",
+        "junior",
+        "lead",
+        "director",
+        "head",
+        "chief",
+        "supervisor",
         // Vietnamese terms
-        'kỹ sư', 'chuyên viên', 'quản lý', 'trưởng', 'phó', 'nhân viên', 'giám đốc',
+        "kỹ sư",
+        "chuyên viên",
+        "quản lý",
+        "trưởng",
+        "phó",
+        "nhân viên",
+        "giám đốc",
         // Common job patterns
-        'frontend', 'backend', 'fullstack', 'mobile', 'web', 'software', 'data', 'product',
-        'sales', 'hr', 'admin', 'support', 'service', 'operations', 'finance'
+        "frontend",
+        "backend",
+        "fullstack",
+        "mobile",
+        "web",
+        "software",
+        "data",
+        "product",
+        "sales",
+        "hr",
+        "admin",
+        "support",
+        "service",
+        "operations",
+        "finance",
       ];
       const lowerPosition = position.toLowerCase();
 
       // Check if contains job keywords OR looks like a job title (contains common patterns)
-      if (jobKeywords.some(keyword => lowerPosition.includes(keyword)) ||
-        /\b(intern|internship|trainee|entry|mid|senior|lead|head|chief|director|manager|specialist|developer|engineer|analyst|designer|coordinator|assistant|executive|consultant)\b/i.test(position)) {
+      if (
+        jobKeywords.some((keyword) => lowerPosition.includes(keyword)) ||
+        /\b(intern|internship|trainee|entry|mid|senior|lead|head|chief|director|manager|specialist|developer|engineer|analyst|designer|coordinator|assistant|executive|consultant)\b/i.test(
+          position,
+        )
+      ) {
         return position;
       }
 
       // If no keywords found but has reasonable length and structure, still return it (AI inference result)
-      if (position.length >= 5 && position.length <= 50 && !/\d{4,}/.test(position) && !/(công ty|company|ltd|inc|corp)/i.test(position)) {
-        console.log('🤖 Returning inferred job position:', position);
+      if (
+        position.length >= 5 &&
+        position.length <= 50 &&
+        !/\d{4,}/.test(position) &&
+        !/(công ty|company|ltd|inc|corp)/i.test(position)
+      ) {
+        console.log("🤖 Returning inferred job position:", position);
         return position;
       }
     }
 
-    return '';
+    return "";
   } catch (error) {
     console.error("Lỗi khi trích xuất chức danh công việc từ AI:", error);
-    return '';
+    return "";
   }
 };
-
 
 const detailedScoreSchema = {
   type: Type.OBJECT,
   properties: {
     "Tiêu chí": { type: Type.STRING },
-    "Điểm": { type: Type.STRING, description: "Score for the criterion, format: 'score/weight_percentage' (e.g., '12.5/15' for 15% weight)" },
-    "Công thức": { type: Type.STRING, description: "Formula used, format: 'subscore X/weight_Y% = X points'" },
-    "Dẫn chứng": { type: Type.STRING, description: "Direct quote from the CV as evidence. Must be in Vietnamese." },
-    "Giải thích": { type: Type.STRING, description: "Brief explanation of the score. Must be in Vietnamese." },
+    Điểm: {
+      type: Type.STRING,
+      description:
+        "Score for the criterion, format: 'score/weight_percentage' (e.g., '12.5/15' for 15% weight)",
+    },
+    "Công thức": {
+      type: Type.STRING,
+      description: "Formula used, format: 'subscore X/weight_Y% = X points'",
+    },
+    "Dẫn chứng": {
+      type: Type.STRING,
+      description:
+        "Direct quote from the CV as evidence. Must be in Vietnamese.",
+    },
+    "Giải thích": {
+      type: Type.STRING,
+      description: "Brief explanation of the score. Must be in Vietnamese.",
+    },
   },
-  required: ["Tiêu chí", "Điểm", "Công thức", "Dẫn chứng", "Giải thích"]
+  required: ["Tiêu chí", "Điểm", "Công thức", "Dẫn chứng", "Giải thích"],
 };
 
 const analysisSchema = {
@@ -338,57 +454,102 @@ const analysisSchema = {
     type: Type.OBJECT,
     properties: {
       candidateName: { type: Type.STRING },
-      phone: { type: Type.STRING, description: "Candidate's phone number, if found." },
-      email: { type: Type.STRING, description: "Candidate's email address, if found." },
+      phone: {
+        type: Type.STRING,
+        description: "Candidate's phone number, if found.",
+      },
+      email: {
+        type: Type.STRING,
+        description: "Candidate's email address, if found.",
+      },
       fileName: { type: Type.STRING },
       jobTitle: { type: Type.STRING },
       industry: { type: Type.STRING },
       department: { type: Type.STRING },
       experienceLevel: { type: Type.STRING },
-      hardFilterFailureReason: { type: Type.STRING, description: "Reason for failing a mandatory hard filter, in Vietnamese." },
-      softFilterWarnings: { type: Type.ARRAY, items: { type: Type.STRING }, description: "List of warnings for non-mandatory filters that were not met, in Vietnamese." },
+      hardFilterFailureReason: {
+        type: Type.STRING,
+        description:
+          "Reason for failing a mandatory hard filter, in Vietnamese.",
+      },
+      softFilterWarnings: {
+        type: Type.ARRAY,
+        items: { type: Type.STRING },
+        description:
+          "List of warnings for non-mandatory filters that were not met, in Vietnamese.",
+      },
       detectedLocation: { type: Type.STRING },
       analysis: {
         type: Type.OBJECT,
         properties: {
           "Tổng điểm": { type: Type.INTEGER },
-          "Hạng": { type: Type.STRING },
+          Hạng: { type: Type.STRING },
           "Chi tiết": {
             type: Type.ARRAY,
             items: detailedScoreSchema,
           },
-          "Điểm mạnh CV": { type: Type.ARRAY, items: { type: Type.STRING }, description: "List of 3-5 key strengths from the CV." },
-          "Điểm yếu CV": { type: Type.ARRAY, items: { type: Type.STRING }, description: "List of 3-5 key weaknesses from the CV." },
-          "educationValidation": {
+          "Điểm mạnh CV": {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description: "List of 3-5 key strengths from the CV.",
+          },
+          "Điểm yếu CV": {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description: "List of 3-5 key weaknesses from the CV.",
+          },
+          educationValidation: {
             type: Type.OBJECT,
             properties: {
-              "standardizedEducation": { type: Type.STRING, description: "Standardized education info format: 'School Name - Degree - Major - Period'" },
-              "validationNote": { type: Type.STRING, description: "'Hợp lệ' or 'Không hợp lệ – cần HR kiểm tra lại'" },
-              "warnings": { type: Type.ARRAY, items: { type: Type.STRING }, description: "List of validation warnings or issues found" }
+              standardizedEducation: {
+                type: Type.STRING,
+                description:
+                  "Standardized education info format: 'School Name - Degree - Major - Period'",
+              },
+              validationNote: {
+                type: Type.STRING,
+                description: "'Hợp lệ' or 'Không hợp lệ – cần HR kiểm tra lại'",
+              },
+              warnings: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+                description: "List of validation warnings or issues found",
+              },
             },
-            required: ["standardizedEducation", "validationNote"]
+            required: ["standardizedEducation", "validationNote"],
           },
         },
-        required: ["Tổng điểm", "Hạng", "Chi tiết", "Điểm mạnh CV", "Điểm yếu CV"]
-      }
+        required: [
+          "Tổng điểm",
+          "Hạng",
+          "Chi tiết",
+          "Điểm mạnh CV",
+          "Điểm yếu CV",
+        ],
+      },
     },
-    required: ["candidateName", "fileName", "analysis"]
-  }
+    required: ["candidateName", "fileName", "analysis"],
+  },
 };
 
 const buildCompactCriteria = (weights: WeightCriteria): string => {
-  return Object.values(weights).map((c: MainCriterion) => {
-    const totalWeight = c.children?.reduce((sum, child) => sum + child.weight, 0) || c.weight || 0;
-    return `${c.name}: ${totalWeight}%`;
-  }).join('\n');
+  return Object.values(weights)
+    .map((c: MainCriterion) => {
+      const totalWeight =
+        c.children?.reduce((sum, child) => sum + child.weight, 0) ||
+        c.weight ||
+        0;
+      return `${c.name}: ${totalWeight}%`;
+    })
+    .join("\n");
 };
 
 const createAnalysisPrompt = (
   jdText: string,
   weights: WeightCriteria,
-  hardFilters: HardFilters
+  hardFilters: HardFilters,
 ): string => {
-  const compactJD = jdText.replace(/\s+/g, ' ').trim().slice(0, 5000);
+  const compactJD = jdText.replace(/\s+/g, " ").trim().slice(0, 5000);
   const compactWeights = buildCompactCriteria(weights);
 
   return `
@@ -404,10 +565,10 @@ const createAnalysisPrompt = (
       ${compactWeights}
 
       **BỘ LỌC CỨNG:**
-      Địa điểm: ${hardFilters.location || 'Linh hoạt'} (Bắt buộc: ${hardFilters.locationMandatory ? 'Có' : 'Không'})
-      Kinh nghiệm tối thiểu: ${hardFilters.minExp || 'Không yêu cầu'} năm (Bắt buộc: ${hardFilters.minExpMandatory ? 'Có' : 'Không'})
-      Cấp độ: ${hardFilters.seniority || 'Linh hoạt'} (Bắt buộc: ${hardFilters.seniorityMandatory ? 'Có' : 'Không'})
-      Thông tin liên hệ: (Bắt buộc: ${hardFilters.contactMandatory ? 'Có' : 'Không'})
+      Địa điểm: ${hardFilters.location || "Linh hoạt"} (Bắt buộc: ${hardFilters.locationMandatory ? "Có" : "Không"})
+      Kinh nghiệm tối thiểu: ${hardFilters.minExp || "Không yêu cầu"} năm (Bắt buộc: ${hardFilters.minExpMandatory ? "Có" : "Không"})
+      Cấp độ: ${hardFilters.seniority || "Linh hoạt"} (Bắt buộc: ${hardFilters.seniorityMandatory ? "Có" : "Không"})
+      Thông tin liên hệ: (Bắt buộc: ${hardFilters.contactMandatory ? "Có" : "Không"})
 
       **PHƯƠNG PHÁP ĐÁNH GIÁ TIÊN TIẾN:**
 
@@ -525,7 +686,10 @@ const createAnalysisPrompt = (
     `;
 };
 
-const getFileContentPart = async (file: File, onProgress?: (message: string) => void): Promise<{ text: string } | null> => {
+const getFileContentPart = async (
+  file: File,
+  onProgress?: (message: string) => void,
+): Promise<{ text: string } | null> => {
   try {
     // Enhanced progress reporting
     const progressCallback = (message: string) => {
@@ -550,7 +714,14 @@ const getFileContentPart = async (file: File, onProgress?: (message: string) => 
  * Dedicated AI function to refine and validate education data
  * This acts as a second opinion to ensure high accuracy
  */
-const refineEducationWithAI = async (cvText: string, currentEdu: string | undefined): Promise<{ standardizedEducation: string, validationNote: string, warnings: string[] } | null> => {
+const refineEducationWithAI = async (
+  cvText: string,
+  currentEdu: string | undefined,
+): Promise<{
+  standardizedEducation: string;
+  validationNote: string;
+  warnings: string[];
+} | null> => {
   const prompt = `
     Bạn là chuyên gia thẩm định hồ sơ học vấn (Education Verifier).
     Nhiệm vụ: Phân tích văn bản CV và xác thực/trích xuất lại thông tin học vấn một cách CHÍNH XÁC TUYỆT ĐỐI.
@@ -560,7 +731,7 @@ const refineEducationWithAI = async (cvText: string, currentEdu: string | undefi
     ${cvText.slice(0, 4000)}
     ---
 
-    Thông tin học vấn hiện tại (đang cần kiểm tra): "${currentEdu || 'Chưa có'}"
+    Thông tin học vấn hiện tại (đang cần kiểm tra): "${currentEdu || "Chưa có"}"
 
     QUY TẮC XỬ LÝ NGHIÊM NGẶT:
     1. **PHÁT HIỆN LỖI TEMPLATE (ƯU TIÊN CAO):**
@@ -608,7 +779,10 @@ const refineEducationWithAI = async (cvText: string, currentEdu: string | undefi
  * Dedicated AI function to refine candidate name
  * Fixes OCR spacing issues and extracts the most accurate name
  */
-const refineNameWithAI = async (cvText: string, currentName: string | undefined): Promise<string | null> => {
+const refineNameWithAI = async (
+  cvText: string,
+  currentName: string | undefined,
+): Promise<string | null> => {
   const prompt = `
     Bạn là chuyên gia xử lý văn bản CV, đặc biệt là các CV dạng ảnh (PNG/JPG) bị lỗi OCR nặng.
     Nhiệm vụ: Khôi phục và chuẩn hóa TÊN ỨNG VIÊN từ văn bản thô.
@@ -618,7 +792,7 @@ const refineNameWithAI = async (cvText: string, currentName: string | undefined)
     ${cvText.slice(0, 2000)}
     ---
 
-    Tên hiện tại (có thể bị lỗi): "${currentName || ''}"
+    Tên hiện tại (có thể bị lỗi): "${currentName || ""}"
 
     CHIẾN LƯỢC KHÔI PHỤC TÊN (QUAN TRỌNG):
     1. **Nhận diện lỗi OCR đặc thù của tiếng Việt:**
@@ -650,9 +824,14 @@ const refineNameWithAI = async (cvText: string, currentName: string | undefined)
     });
     let name = response.text.trim();
     // Remove quotes if AI adds them
-    name = name.replace(/^["']|["']$/g, '');
+    name = name.replace(/^["']|["']$/g, "");
     // Basic validation
-    if (name.length < 2 || name.toLowerCase() === 'null' || name.toLowerCase() === 'không tìm thấy') return null;
+    if (
+      name.length < 2 ||
+      name.toLowerCase() === "null" ||
+      name.toLowerCase() === "không tìm thấy"
+    )
+      return null;
     return name;
   } catch (error) {
     return null;
@@ -663,60 +842,76 @@ const enhanceAndValidateCandidate = (candidate: any): any => {
   // Ensure required fields exist
   const enhanced = {
     ...candidate,
-    candidateName: candidate.candidateName || 'Không xác định',
-    phone: candidate.phone || '',
-    email: candidate.email || '',
-    fileName: candidate.fileName || 'Unknown',
-    jobTitle: candidate.jobTitle || '',
-    industry: candidate.industry || '',
-    department: candidate.department || '',
-    experienceLevel: candidate.experienceLevel || '',
-    detectedLocation: candidate.detectedLocation || '',
+    candidateName: candidate.candidateName || "Không xác định",
+    phone: candidate.phone || "",
+    email: candidate.email || "",
+    fileName: candidate.fileName || "Unknown",
+    jobTitle: candidate.jobTitle || "",
+    industry: candidate.industry || "",
+    department: candidate.department || "",
+    experienceLevel: candidate.experienceLevel || "",
+    detectedLocation: candidate.detectedLocation || "",
   };
 
   // Validate and normalize analysis scores
   if (enhanced.analysis) {
     // Ensure total score is within valid range
-    if (typeof enhanced.analysis['Tổng điểm'] === 'number') {
-      enhanced.analysis['Tổng điểm'] = Math.max(0, Math.min(100, enhanced.analysis['Tổng điểm']));
+    if (typeof enhanced.analysis["Tổng điểm"] === "number") {
+      enhanced.analysis["Tổng điểm"] = Math.max(
+        0,
+        Math.min(100, enhanced.analysis["Tổng điểm"]),
+      );
     } else {
-      enhanced.analysis['Tổng điểm'] = 0;
+      enhanced.analysis["Tổng điểm"] = 0;
     }
 
     // Validate grade
-    const validGrades = ['A', 'B', 'C'];
-    if (!validGrades.includes(enhanced.analysis['Hạng'])) {
-      const score = enhanced.analysis['Tổng điểm'];
-      enhanced.analysis['Hạng'] = score >= 75 ? 'A' : score >= 50 ? 'B' : 'C';
+    const validGrades = ["A", "B", "C"];
+    if (!validGrades.includes(enhanced.analysis["Hạng"])) {
+      const score = enhanced.analysis["Tổng điểm"];
+      enhanced.analysis["Hạng"] = score >= 75 ? "A" : score >= 50 ? "B" : "C";
     }
 
     // Ensure detailed scores exist
-    if (!Array.isArray(enhanced.analysis['Chi tiết'])) {
-      enhanced.analysis['Chi tiết'] = [];
+    if (!Array.isArray(enhanced.analysis["Chi tiết"])) {
+      enhanced.analysis["Chi tiết"] = [];
     }
 
     // Ensure strengths and weaknesses exist
-    if (!Array.isArray(enhanced.analysis['Điểm mạnh CV'])) {
-      enhanced.analysis['Điểm mạnh CV'] = [];
+    if (!Array.isArray(enhanced.analysis["Điểm mạnh CV"])) {
+      enhanced.analysis["Điểm mạnh CV"] = [];
     }
-    if (!Array.isArray(enhanced.analysis['Điểm yếu CV'])) {
-      enhanced.analysis['Điểm yếu CV'] = [];
+    if (!Array.isArray(enhanced.analysis["Điểm yếu CV"])) {
+      enhanced.analysis["Điểm yếu CV"] = [];
     }
 
     // Post-processing for Education Validation
     if (enhanced.analysis.educationValidation) {
-      const eduInfo = enhanced.analysis.educationValidation.standardizedEducation || '';
-      const forbiddenKeywords = ['TopCV', 'VietnamWorks', 'JobStreet', 'TimViecNhanh', 'CareerBuilder', 'Vieclam24h', 'MyWork', 'JobsGO'];
+      const eduInfo =
+        enhanced.analysis.educationValidation.standardizedEducation || "";
+      const forbiddenKeywords = [
+        "TopCV",
+        "VietnamWorks",
+        "JobStreet",
+        "TimViecNhanh",
+        "CareerBuilder",
+        "Vieclam24h",
+        "MyWork",
+        "JobsGO",
+      ];
 
       // Split to check School Name specifically
-      const eduParts = eduInfo.split(' - ');
-      const schoolName = eduParts[0] || '';
-      const degree = eduParts[1] || '';
+      const eduParts = eduInfo.split(" - ");
+      const schoolName = eduParts[0] || "";
+      const degree = eduParts[1] || "";
 
-      const foundForbidden = forbiddenKeywords.find(keyword => schoolName.toLowerCase().includes(keyword.toLowerCase()));
+      const foundForbidden = forbiddenKeywords.find((keyword) =>
+        schoolName.toLowerCase().includes(keyword.toLowerCase()),
+      );
 
       if (foundForbidden) {
-        enhanced.analysis.educationValidation.validationNote = 'Không hợp lệ – cần HR kiểm tra lại';
+        enhanced.analysis.educationValidation.validationNote =
+          "Không hợp lệ – cần HR kiểm tra lại";
         if (!Array.isArray(enhanced.analysis.educationValidation.warnings)) {
           enhanced.analysis.educationValidation.warnings = [];
         }
@@ -724,21 +919,33 @@ const enhanceAndValidateCandidate = (candidate: any): any => {
         const warningMsg = `Tên trường '${foundForbidden}' không phải là một trường đại học hợp lệ mà là một nền tảng tuyển dụng.`;
         const warningMsg2 = `Phát hiện tên nền tảng tuyển dụng "${foundForbidden}" trong mục học vấn. Có thể do lỗi trích xuất từ template.`;
 
-        if (!enhanced.analysis.educationValidation.warnings.includes(warningMsg)) {
+        if (
+          !enhanced.analysis.educationValidation.warnings.includes(warningMsg)
+        ) {
           enhanced.analysis.educationValidation.warnings.push(warningMsg);
         }
-        if (!enhanced.analysis.educationValidation.warnings.includes(warningMsg2)) {
+        if (
+          !enhanced.analysis.educationValidation.warnings.includes(warningMsg2)
+        ) {
           enhanced.analysis.educationValidation.warnings.push(warningMsg2);
         }
       }
 
       // Check for short courses/vocational training
-      if (degree.toLowerCase().match(/khóa học|short course|chứng chỉ|certificate|training|đào tạo nghề/)) {
+      if (
+        degree
+          .toLowerCase()
+          .match(
+            /khóa học|short course|chứng chỉ|certificate|training|đào tạo nghề/,
+          )
+      ) {
         if (!Array.isArray(enhanced.analysis.educationValidation.warnings)) {
           enhanced.analysis.educationValidation.warnings = [];
         }
         const warningMsg = `Thông tin học vấn được trích xuất là một khóa học/chứng chỉ từ ${schoolName}, không phải bằng cấp đại học chính quy.`;
-        if (!enhanced.analysis.educationValidation.warnings.includes(warningMsg)) {
+        if (
+          !enhanced.analysis.educationValidation.warnings.includes(warningMsg)
+        ) {
           enhanced.analysis.educationValidation.warnings.push(warningMsg);
         }
       }
@@ -754,8 +961,8 @@ const enhanceAndValidateCandidate = (candidate: any): any => {
 const attemptPartialJsonRecovery = (text: string): any[] | null => {
   try {
     // Try to find JSON array bounds
-    const startIndex = text.indexOf('[');
-    const lastIndex = text.lastIndexOf(']');
+    const startIndex = text.indexOf("[");
+    const lastIndex = text.lastIndexOf("]");
 
     if (startIndex !== -1 && lastIndex !== -1 && lastIndex > startIndex) {
       const jsonPart = text.substring(startIndex, lastIndex + 1);
@@ -766,10 +973,10 @@ const attemptPartialJsonRecovery = (text: string): any[] | null => {
       } catch {
         // Try to fix common JSON issues
         let fixed = jsonPart
-          .replace(/,\s*}/g, '}') // Remove trailing commas
-          .replace(/,\s*]/g, ']')
-          .replace(/}\s*{/g, '},{') // Add missing commas between objects
-          .replace(/]\s*\[/g, '],[');
+          .replace(/,\s*}/g, "}") // Remove trailing commas
+          .replace(/,\s*]/g, "]")
+          .replace(/}\s*{/g, "},{") // Add missing commas between objects
+          .replace(/]\s*\[/g, "],[");
 
         return JSON.parse(fixed);
       }
@@ -777,7 +984,7 @@ const attemptPartialJsonRecovery = (text: string): any[] | null => {
 
     return null;
   } catch (error) {
-    console.warn('JSON recovery failed:', error);
+    console.warn("JSON recovery failed:", error);
     return null;
   }
 };
@@ -803,7 +1010,7 @@ const optimizeContentForAI = (text: string, fileName: string): string => {
     /(?:chứng chỉ|certificates|certifications)[\s\S]*?(?=\n[A-Z]|\n\s*\n|$)/gi,
   ];
 
-  let priorityContent = '';
+  let priorityContent = "";
   let remainingChars = MAX_CHARS;
 
   // Extract priority sections first
@@ -812,10 +1019,10 @@ const optimizeContentForAI = (text: string, fileName: string): string => {
     if (matches && remainingChars > 0) {
       for (const match of matches) {
         if (remainingChars > match.length) {
-          priorityContent += match + '\n\n';
+          priorityContent += match + "\n\n";
           remainingChars -= match.length;
         } else {
-          priorityContent += match.substring(0, remainingChars) + '...';
+          priorityContent += match.substring(0, remainingChars) + "...";
           remainingChars = 0;
           break;
         }
@@ -826,35 +1033,41 @@ const optimizeContentForAI = (text: string, fileName: string): string => {
 
   // If we still have space, add remaining content
   if (remainingChars > 200 && priorityContent.length < text.length) {
-    const remainingText = text.replace(new RegExp(prioritySections.map(p => p.source).join('|'), 'gi'), '');
+    const remainingText = text.replace(
+      new RegExp(prioritySections.map((p) => p.source).join("|"), "gi"),
+      "",
+    );
     if (remainingText.length > remainingChars) {
-      priorityContent += '\n\n--- Additional Info ---\n' + remainingText.substring(0, remainingChars - 50) + '...';
+      priorityContent +=
+        "\n\n--- Additional Info ---\n" +
+        remainingText.substring(0, remainingChars - 50) +
+        "...";
     } else {
-      priorityContent += '\n\n--- Additional Info ---\n' + remainingText;
+      priorityContent += "\n\n--- Additional Info ---\n" + remainingText;
     }
   }
 
-  return priorityContent || text.substring(0, MAX_CHARS) + '...';
+  return priorityContent || text.substring(0, MAX_CHARS) + "...";
 };
-
 
 export async function* analyzeCVs(
   jdText: string,
   weights: WeightCriteria,
   hardFilters: HardFilters,
-  cvFiles: File[]
-): AsyncGenerator<Candidate | { status: 'progress'; message: string }> {
-
+  cvFiles: File[],
+): AsyncGenerator<Candidate | { status: "progress"; message: string }> {
   const fileTextMap = new Map<string, string>();
 
   // Generate analysis parameter hashes for caching
-  const { jdHash, weightsHash, filtersHash } = analysisCacheService.generateAnalysisHashes(
-    jdText, weights, hardFilters
-  );
+  const { jdHash, weightsHash, filtersHash } =
+    analysisCacheService.generateAnalysisHashes(jdText, weights, hardFilters);
 
   // Check cache for existing results
   const { cached, uncached } = await analysisCacheService.batchCheckCache(
-    cvFiles, jdHash, weightsHash, filtersHash
+    cvFiles,
+    jdHash,
+    weightsHash,
+    filtersHash,
   );
 
   const fileLookup = new Map<string, File>();
@@ -863,18 +1076,30 @@ export async function* analyzeCVs(
 
   // Yield cached results first
   if (cached.length > 0) {
-    yield { status: 'progress', message: `Tìm thấy ${cached.length} kết quả đã cache, đang load...` };
+    yield {
+      status: "progress",
+      message: `Tìm thấy ${cached.length} kết quả đã cache, đang load...`,
+    };
 
     for (const { file, result } of cached) {
-      await applyIndustryBaselineEnhancement(result, file.name, fileLookup, fileTextMap, hardFilters);
-      yield { status: 'progress', message: `Đã load từ cache: ${file.name}` };
+      await applyIndustryBaselineEnhancement(
+        result,
+        file.name,
+        fileLookup,
+        fileTextMap,
+        hardFilters,
+      );
+      yield { status: "progress", message: `Đã load từ cache: ${file.name}` };
       yield result;
     }
   }
 
   // Process uncached files
   if (uncached.length === 0) {
-    yield { status: 'progress', message: 'Tất cả CV đã có trong cache. Hoàn thành!' };
+    yield {
+      status: "progress",
+      message: "Tất cả CV đã có trong cache. Hoàn thành!",
+    };
     return;
   }
 
@@ -886,15 +1111,18 @@ export async function* analyzeCVs(
   const totalFiles = uncached.length;
   const BATCH_SIZE = 3; // Process files in small batches for better performance
 
-  yield { status: 'progress', message: `Cần phân tích ${totalFiles} CV mới. Bắt đầu xử lý...` };
+  yield {
+    status: "progress",
+    message: `Cần phân tích ${totalFiles} CV mới. Bắt đầu xử lý...`,
+  };
 
   // Process uncached files in batches to avoid overwhelming the system
   for (let i = 0; i < uncached.length; i += BATCH_SIZE) {
     const batch = uncached.slice(i, Math.min(i + BATCH_SIZE, uncached.length));
 
     yield {
-      status: 'progress',
-      message: `Hệ Thống đang xử lý`
+      status: "progress",
+      message: `Hệ Thống đang xử lý`,
     };
 
     // Process batch in parallel for faster processing
@@ -916,12 +1144,12 @@ export async function* analyzeCVs(
     for (const result of batchResults) {
       processedCount++;
 
-      if (result.status === 'fulfilled') {
+      if (result.status === "fulfilled") {
         const { file, contentPart, error } = result.value;
 
         yield {
-          status: 'progress',
-          message: `Đã xử lý ${processedCount}/${totalFiles}: ${file.name}`
+          status: "progress",
+          message: `Đã xử lý ${processedCount}/${totalFiles}: ${file.name}`,
         };
 
         if (contentPart) {
@@ -932,51 +1160,57 @@ export async function* analyzeCVs(
         } else {
           yield {
             id: `${file.name}-error-${Date.now()}`,
-            status: 'FAILED' as 'FAILED',
-            error: error ? `Lỗi: ${error instanceof Error ? error.message : 'Unknown error'}` : 'Không thể đọc tệp',
-            candidateName: 'Lỗi Xử Lý Tệp',
+            status: "FAILED" as "FAILED",
+            error: error
+              ? `Lỗi: ${error instanceof Error ? error.message : "Unknown error"}`
+              : "Không thể đọc tệp",
+            candidateName: "Lỗi Xử Lý Tệp",
             fileName: file.name,
-            jobTitle: '',
-            industry: '',
-            department: '',
-            experienceLevel: '',
-            detectedLocation: '',
-            phone: '',
-            email: ''
+            jobTitle: "",
+            industry: "",
+            department: "",
+            experienceLevel: "",
+            detectedLocation: "",
+            phone: "",
+            email: "",
           };
         }
       } else {
         // Handle rejected promise
-        const fileName = batch[batchResults.indexOf(result)]?.name || 'Unknown file';
+        const fileName =
+          batch[batchResults.indexOf(result)]?.name || "Unknown file";
         yield {
           id: `${fileName}-error-${Date.now()}`,
-          status: 'FAILED' as 'FAILED',
+          status: "FAILED" as "FAILED",
           error: `Lỗi xử lý file: ${result.reason}`,
-          candidateName: 'Lỗi Xử Lý Tệp',
+          candidateName: "Lỗi Xử Lý Tệp",
           fileName: fileName,
-          jobTitle: '',
-          industry: '',
-          department: '',
-          experienceLevel: '',
-          detectedLocation: '',
-          phone: '',
-          email: ''
+          jobTitle: "",
+          industry: "",
+          department: "",
+          experienceLevel: "",
+          detectedLocation: "",
+          phone: "",
+          email: "",
         };
       }
     }
 
     // Small delay between batches to prevent overwhelming
     if (i + BATCH_SIZE < uncached.length) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
   }
 
-  yield { status: 'progress', message: `Hoàn tất xử lý ${totalFiles} files. Đang gửi đến AI để phân tích toàn diện...` };
+  yield {
+    status: "progress",
+    message: `Hoàn tất xử lý ${totalFiles} files. Đang gửi đến AI để phân tích toàn diện...`,
+  };
 
   try {
     // Enhanced AI configuration for more reliable results
     const aiConfig = {
-      responseMimeType: 'application/json',
+      responseMimeType: "application/json",
       responseSchema: analysisSchema,
       temperature: 0.1, // Slight randomness for more natural analysis
       topP: 0.8,
@@ -984,38 +1218,60 @@ export async function* analyzeCVs(
       thinkingConfig: { thinkingBudget: 0 },
     };
 
-    yield { status: 'progress', message: 'Gửi yêu cầu phân tích đến AI với cấu hình tối ưu...' };
+    yield {
+      status: "progress",
+      message: "Gửi yêu cầu phân tích đến AI với cấu hình tối ưu...",
+    };
 
-    const response = await generateContentWithFallback(MODEL_NAME, { parts: contents }, aiConfig);
+    const response = await generateContentWithFallback(
+      MODEL_NAME,
+      { parts: contents },
+      aiConfig,
+    );
 
-    yield { status: 'progress', message: 'AI đã phản hồi. Đang xử lý và validate kết quả...' };
+    yield {
+      status: "progress",
+      message: "AI đã phản hồi. Đang xử lý và validate kết quả...",
+    };
 
     const resultText = response.text.trim();
-    let candidates: Omit<Candidate, 'id' | 'status'>[] = [];
+    let candidates: Omit<Candidate, "id" | "status">[] = [];
 
     try {
       candidates = JSON.parse(resultText);
 
       // Validate and enhance results
-      candidates = candidates.map(candidate => enhanceAndValidateCandidate(candidate));
+      candidates = candidates.map((candidate) =>
+        enhanceAndValidateCandidate(candidate),
+      );
 
-      yield { status: 'progress', message: `Đã validate ${candidates.length} kết quả phân tích từ AI` };
-
+      yield {
+        status: "progress",
+        message: `Đã validate ${candidates.length} kết quả phân tích từ AI`,
+      };
     } catch (e) {
       console.error("Lỗi phân tích JSON từ AI:", e);
-      console.error("Dữ liệu thô từ AI (1000 ký tự đầu):", resultText.substring(0, 1000));
+      console.error(
+        "Dữ liệu thô từ AI (1000 ký tự đầu):",
+        resultText.substring(0, 1000),
+      );
 
       // Try to recover partial results
       try {
         const partialResults = attemptPartialJsonRecovery(resultText);
         if (partialResults && partialResults.length > 0) {
           candidates = partialResults;
-          yield { status: 'progress', message: `Khôi phục được ${candidates.length} kết quả từ phản hồi AI` };
+          yield {
+            status: "progress",
+            message: `Khôi phục được ${candidates.length} kết quả từ phản hồi AI`,
+          };
         } else {
           throw new Error("Không thể khôi phục dữ liệu từ AI");
         }
       } catch (recoveryError) {
-        throw new Error("AI trả về dữ liệu không hợp lệ và không thể khôi phục. Vui lòng thử lại.");
+        throw new Error(
+          "AI trả về dữ liệu không hợp lệ và không thể khôi phục. Vui lòng thử lại.",
+        );
       }
     }
 
@@ -1029,26 +1285,36 @@ export async function* analyzeCVs(
       return (h >>> 0).toString(36);
     };
 
-    const finalCandidates = candidates.map(c => {
-      const basis = `${c.fileName || ''}|${c.candidateName || ''}|${c.jobTitle || ''}|${c.experienceLevel || ''}`;
+    const finalCandidates = candidates.map((c) => {
+      const basis = `${c.fileName || ""}|${c.candidateName || ""}|${c.jobTitle || ""}|${c.experienceLevel || ""}`;
       return {
         ...c,
         id: `cand_${stableHash(basis)}`,
-        status: 'SUCCESS' as 'SUCCESS',
+        status: "SUCCESS" as "SUCCESS",
       };
     });
 
     // Stable ordering: sort by provided total score desc then filename asc
     finalCandidates.sort((a, b) => {
-      const sa = typeof a.analysis?.['Tổng điểm'] === 'number' ? a.analysis['Tổng điểm'] : -1;
-      const sb = typeof b.analysis?.['Tổng điểm'] === 'number' ? b.analysis['Tổng điểm'] : -1;
+      const sa =
+        typeof a.analysis?.["Tổng điểm"] === "number"
+          ? a.analysis["Tổng điểm"]
+          : -1;
+      const sb =
+        typeof b.analysis?.["Tổng điểm"] === "number"
+          ? b.analysis["Tổng điểm"]
+          : -1;
       if (sb !== sa) return sb - sa;
-      return (a.fileName || '').localeCompare(b.fileName || '');
+      return (a.fileName || "").localeCompare(b.fileName || "");
     });
 
     // --- NEW STEP: Refine education for each candidate using dedicated AI ---
     // This ensures "chuẩn chỉ" accuracy as requested
-    yield { status: 'progress', message: 'Đang dùng AI chuyên sâu để thẩm định lại bằng cấp và tên ứng viên...' };
+    yield {
+      status: "progress",
+      message:
+        "Đang dùng AI chuyên sâu để thẩm định lại bằng cấp và tên ứng viên...",
+    };
 
     const refinementPromises = finalCandidates.map(async (candidate) => {
       // Only refine if we have the text content
@@ -1057,31 +1323,48 @@ export async function* analyzeCVs(
 
       if (cvText) {
         // Check if current education looks suspicious or just to be sure
-        const currentEdu = candidate.analysis?.educationValidation?.standardizedEducation;
+        const currentEdu =
+          candidate.analysis?.educationValidation?.standardizedEducation;
 
         // Run refinements in parallel
         let [refinedEdu, refinedName] = await Promise.all([
           refineEducationWithAI(cvText, currentEdu),
-          refineNameWithAI(cvText, candidate.candidateName)
+          refineNameWithAI(cvText, candidate.candidateName),
         ]);
 
         // --- FORCE OCR RETRY LOGIC ---
         // Nếu kết quả học vấn không tốt VÀ chúng ta có file gốc -> Thử dùng Cloud Vision (Force OCR)
-        const isEduInvalid = !refinedEdu || !refinedEdu.standardizedEducation || refinedEdu.standardizedEducation === 'Không có thông tin' || refinedEdu.validationNote === 'Không hợp lệ';
+        const isEduInvalid =
+          !refinedEdu ||
+          !refinedEdu.standardizedEducation ||
+          refinedEdu.standardizedEducation === "Không có thông tin" ||
+          refinedEdu.validationNote === "Không hợp lệ";
 
         if (isEduInvalid && file) {
           try {
             // Force OCR để lấy text chất lượng cao nhất (ưu tiên Cloud Vision)
-            const highQualityText = await processFileToText(file, (msg) => { }, { forceOcr: true });
+            const highQualityText = await processFileToText(file, (msg) => {}, {
+              forceOcr: true,
+            });
 
             // Thử refine lại với text mới
-            const retryEdu = await refineEducationWithAI(highQualityText, currentEdu);
+            const retryEdu = await refineEducationWithAI(
+              highQualityText,
+              currentEdu,
+            );
 
             // Nếu kết quả tốt hơn, dùng nó
-            if (retryEdu && retryEdu.standardizedEducation && retryEdu.standardizedEducation !== 'Không có thông tin') {
+            if (
+              retryEdu &&
+              retryEdu.standardizedEducation &&
+              retryEdu.standardizedEducation !== "Không có thông tin"
+            ) {
               refinedEdu = retryEdu;
               // Tiện thể check lại tên luôn
-              const retryName = await refineNameWithAI(highQualityText, candidate.candidateName);
+              const retryName = await refineNameWithAI(
+                highQualityText,
+                candidate.candidateName,
+              );
               if (retryName) refinedName = retryName;
             }
           } catch (e) {
@@ -1093,17 +1376,21 @@ export async function* analyzeCVs(
         // Apply Education updates
         if (refinedEdu) {
           if (!candidate.analysis) candidate.analysis = {} as any;
-          if (!candidate.analysis.educationValidation) candidate.analysis.educationValidation = {} as any;
+          if (!candidate.analysis.educationValidation)
+            candidate.analysis.educationValidation = {} as any;
 
           // Update with refined data
-          candidate.analysis.educationValidation.standardizedEducation = refinedEdu.standardizedEducation;
-          candidate.analysis.educationValidation.validationNote = refinedEdu.validationNote;
+          candidate.analysis.educationValidation.standardizedEducation =
+            refinedEdu.standardizedEducation;
+          candidate.analysis.educationValidation.validationNote =
+            refinedEdu.validationNote;
 
           // Merge warnings
           if (refinedEdu.warnings && refinedEdu.warnings.length > 0) {
-            const existingWarnings = candidate.analysis.educationValidation.warnings || [];
+            const existingWarnings =
+              candidate.analysis.educationValidation.warnings || [];
             // Add new warnings if not duplicates
-            refinedEdu.warnings.forEach(w => {
+            refinedEdu.warnings.forEach((w) => {
               if (!existingWarnings.includes(w)) existingWarnings.push(w);
             });
             candidate.analysis.educationValidation.warnings = existingWarnings;
@@ -1120,11 +1407,17 @@ export async function* analyzeCVs(
 
     // Wait for all refinements to complete
     await Promise.all(refinementPromises);
-    yield { status: 'progress', message: 'Đã hoàn tất thẩm định dữ liệu.' };
+    yield { status: "progress", message: "Đã hoàn tất thẩm định dữ liệu." };
     // -----------------------------------------------------------------------
 
     for (const candidate of finalCandidates) {
-      await applyIndustryBaselineEnhancement(candidate, candidate.fileName, fileLookup, fileTextMap, hardFilters);
+      await applyIndustryBaselineEnhancement(
+        candidate,
+        candidate.fileName,
+        fileLookup,
+        fileTextMap,
+        hardFilters,
+      );
     }
     // Cache new results and yield them
     for (let i = 0; i < finalCandidates.length; i++) {
@@ -1138,7 +1431,7 @@ export async function* analyzeCVs(
           candidate,
           jdHash,
           weightsHash,
-          filtersHash
+          filtersHash,
         );
       }
 
@@ -1148,13 +1441,13 @@ export async function* analyzeCVs(
     // Final progress message
     const cacheStats = analysisCacheService.getCacheStats();
     yield {
-      status: 'progress',
-      message: `✅ Hoàn tất! Cache hiện có ${cacheStats.size} entries để tăng tốc lần sau.`
+      status: "progress",
+      message: `✅ Hoàn tất! Cache hiện có ${cacheStats.size} entries để tăng tốc lần sau.`,
     };
-
   } catch (error) {
     console.error("Lỗi phân tích từ AI:", error);
-    const friendlyMessage = "AI không thể hoàn tất phân tích. Vui lòng thử lại sau. (Lỗi giao tiếp với máy chủ AI)";
+    const friendlyMessage =
+      "AI không thể hoàn tất phân tích. Vui lòng thử lại sau. (Lỗi giao tiếp với máy chủ AI)";
     throw new Error(friendlyMessage);
   }
 }
@@ -1164,40 +1457,56 @@ export async function* analyzeCVs(
 const chatbotResponseSchema = {
   type: Type.OBJECT,
   properties: {
-    "responseText": { type: Type.STRING, description: "The natural language response to the user's query." },
-    "candidateIds": {
+    responseText: {
+      type: Type.STRING,
+      description: "The natural language response to the user's query.",
+    },
+    candidateIds: {
       type: Type.ARRAY,
-      description: "An array of candidate IDs that are relevant to the response, if any.",
-      items: { type: Type.STRING }
+      description:
+        "An array of candidate IDs that are relevant to the response, if any.",
+      items: { type: Type.STRING },
     },
   },
-  required: ["responseText", "candidateIds"]
+  required: ["responseText", "candidateIds"],
 };
 
 export const getChatbotAdvice = async (
   analysisData: AnalysisRunData,
-  userInput: string
+  userInput: string,
 ): Promise<{ responseText: string; candidateIds: string[] }> => {
-  const successfulCandidates = analysisData.candidates.filter(c => c.status === 'SUCCESS');
+  const successfulCandidates = analysisData.candidates.filter(
+    (c) => c.status === "SUCCESS",
+  );
 
   // Sanitize candidate data to remove PII and reduce token count
-  const sanitizedCandidates = successfulCandidates.map(c => ({
+  const sanitizedCandidates = successfulCandidates.map((c) => ({
     id: c.id,
     name: c.candidateName,
-    rank: c.analysis?.['Hạng'],
-    totalScore: c.analysis?.['Tổng điểm'],
-    jdFitPercent: c.analysis?.['Chi tiết']?.find(item => item['Tiêu chí'].startsWith('Phù hợp JD'))
-      ? parseInt(c.analysis['Chi tiết'].find(item => item['Tiêu chí'].startsWith('Phù hợp JD'))!['Điểm'].split('/')[0], 10)
+    rank: c.analysis?.["Hạng"],
+    totalScore: c.analysis?.["Tổng điểm"],
+    jdFitPercent: c.analysis?.["Chi tiết"]?.find((item) =>
+      item["Tiêu chí"].startsWith("Phù hợp JD"),
+    )
+      ? parseInt(
+          c.analysis["Chi tiết"]
+            .find((item) => item["Tiêu chí"].startsWith("Phù hợp JD"))!
+            ["Điểm"].split("/")[0],
+          10,
+        )
       : 0,
     title: c.jobTitle,
-    level: c.experienceLevel
+    level: c.experienceLevel,
   }));
 
   const summary = {
     total: successfulCandidates.length,
-    countA: successfulCandidates.filter(c => c.analysis?.['Hạng'] === 'A').length,
-    countB: successfulCandidates.filter(c => c.analysis?.['Hạng'] === 'B').length,
-    countC: successfulCandidates.filter(c => c.analysis?.['Hạng'] === 'C').length,
+    countA: successfulCandidates.filter((c) => c.analysis?.["Hạng"] === "A")
+      .length,
+    countB: successfulCandidates.filter((c) => c.analysis?.["Hạng"] === "B")
+      .length,
+    countC: successfulCandidates.filter((c) => c.analysis?.["Hạng"] === "C")
+      .length,
   };
 
   const prompt = `
@@ -1227,7 +1536,7 @@ export const getChatbotAdvice = async (
 
     **SALARY GUIDANCE:**
     When asked about salary ("lương", "mức lương", "salary"):
-    - Provide general market salary range estimates for ${analysisData.job.position} in ${analysisData.job.locationRequirement || 'Vietnam'}
+    - Provide general market salary range estimates for ${analysisData.job.position} in ${analysisData.job.locationRequirement || "Vietnam"}
     - Mention experience levels affect salary (Junior: 8-15tr, Mid: 15-30tr, Senior: 30-60tr, Lead: 60-100tr VND/month)
     - Recommend using the dedicated "Salary Analysis" feature for accurate, real-time market data from job-salary-data API
     - Suggest candidates can be evaluated individually with the salary analysis tool
@@ -1251,7 +1560,6 @@ export const getChatbotAdvice = async (
     });
 
     return JSON.parse(response.text);
-
   } catch (error) {
     console.error("Error getting chatbot advice from AI:", error);
     throw new Error("AI chatbot is currently unavailable.");
@@ -1277,11 +1585,11 @@ function generateTabId(): string {
 }
 
 function supportsWebLocks(): boolean {
-  return 'locks' in navigator;
+  return "locks" in navigator;
 }
 
 function createBroadcastChannel(): BroadcastChannel | null {
-  if ('BroadcastChannel' in window) {
+  if ("BroadcastChannel" in window) {
     return new BroadcastChannel(CHANNEL_NAME);
   }
   return null;
@@ -1294,14 +1602,16 @@ function broadcastStatus(busy: boolean) {
 }
 
 function updateUI(busy: boolean, isSelf: boolean = false) {
-  const btn = document.querySelector('#btn') as HTMLButtonElement;
-  const status = document.querySelector('#status') as HTMLElement;
+  const btn = document.querySelector("#btn") as HTMLButtonElement;
+  const status = document.querySelector("#status") as HTMLElement;
   if (btn) {
     btn.disabled = busy;
   }
   if (status) {
     if (busy) {
-      status.textContent = isSelf ? "Đang xử lý tại tab này…" : "Đang xử lý ở tab khác…";
+      status.textContent = isSelf
+        ? "Đang xử lý tại tab này…"
+        : "Đang xử lý ở tab khác…";
     } else {
       status.textContent = "Sẵn sàng";
     }
@@ -1312,35 +1622,41 @@ async function performAction(): Promise<void> {
   // Stub: Gọi backend proxy đến Gemini
   // Không lộ API key, gọi qua endpoint backend
   try {
-    const response = await fetch('/api/proxy-to-gemini', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ /* data */ })
+    const response = await fetch("/api/proxy-to-gemini", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        /* data */
+      }),
     });
-    if (!response.ok) throw new Error('API failed');
+    if (!response.ok) throw new Error("API failed");
     // Xử lý kết quả
   } catch (error) {
-    console.error('performAction error:', error);
+    console.error("performAction error:", error);
     throw error;
   }
 }
 
 async function runExclusive(fn: () => Promise<void>): Promise<void> {
   if (supportsWebLocks()) {
-    return navigator.locks.request(LOCK_NAME, { mode: "exclusive" }, async (lock) => {
-      if (lock) {
-        broadcastStatus(true);
-        updateUI(true, true);
-        try {
-          await fn();
-        } finally {
-          broadcastStatus(false);
-          updateUI(false);
+    return navigator.locks.request(
+      LOCK_NAME,
+      { mode: "exclusive" },
+      async (lock) => {
+        if (lock) {
+          broadcastStatus(true);
+          updateUI(true, true);
+          try {
+            await fn();
+          } finally {
+            broadcastStatus(false);
+            updateUI(false);
+          }
+        } else {
+          updateUI(true, false);
         }
-      } else {
-        updateUI(true, false);
-      }
-    });
+      },
+    );
   } else {
     return fallbackRunExclusive(fn);
   }
@@ -1374,7 +1690,10 @@ function tryAcquireLock(): boolean {
     }
   }
   // Chiếm lock
-  localStorage.setItem(LOCK_KEY, JSON.stringify({ owner: tabId, expiresAt: now + LOCK_TTL }));
+  localStorage.setItem(
+    LOCK_KEY,
+    JSON.stringify({ owner: tabId, expiresAt: now + LOCK_TTL }),
+  );
   isLocked = true;
   return true;
 }
@@ -1385,7 +1704,10 @@ function renewLock() {
   if (lockData) {
     const lock = JSON.parse(lockData);
     if (lock.owner === tabId) {
-      localStorage.setItem(LOCK_KEY, JSON.stringify({ owner: tabId, expiresAt: now + LOCK_TTL }));
+      localStorage.setItem(
+        LOCK_KEY,
+        JSON.stringify({ owner: tabId, expiresAt: now + LOCK_TTL }),
+      );
     }
   }
 }
@@ -1425,7 +1747,7 @@ function bindUI() {
 
   // Lắng nghe storage event cho fallback nếu không có BroadcastChannel
   if (!broadcastChannel) {
-    window.addEventListener('storage', (event) => {
+    window.addEventListener("storage", (event) => {
       if (event.key === LOCK_KEY) {
         const lockData = event.newValue;
         if (lockData) {
@@ -1440,7 +1762,7 @@ function bindUI() {
   }
 
   // Giải phóng lock khi tab unload
-  window.addEventListener('beforeunload', () => {
+  window.addEventListener("beforeunload", () => {
     if (isLocked) {
       releaseLock();
       broadcastStatus(false);
@@ -1458,51 +1780,56 @@ const convertLanguageLevelToCEFR = (text: string): string | null => {
   const upperText = text.toUpperCase();
 
   // IELTS conversion
-  if (upperText.includes('IELTS')) {
+  if (upperText.includes("IELTS")) {
     const match = upperText.match(/IELTS\s*(\d+\.?\d*)/);
     if (match) {
       const score = parseFloat(match[1]);
-      if (score >= 8.0) return 'C2';
-      if (score >= 7.0) return 'C1';
-      if (score >= 5.5) return 'B2';
-      if (score >= 4.0) return 'B1';
+      if (score >= 8.0) return "C2";
+      if (score >= 7.0) return "C1";
+      if (score >= 5.5) return "B2";
+      if (score >= 4.0) return "B1";
     }
   }
 
   // TOEIC conversion
-  if (upperText.includes('TOEIC')) {
+  if (upperText.includes("TOEIC")) {
     const match = upperText.match(/TOEIC\s*(\d+)/);
     if (match) {
       const score = parseInt(match[1]);
-      if (score >= 945) return 'C2';
-      if (score >= 785) return 'C1';
-      if (score >= 550) return 'B2';
-      if (score >= 225) return 'B1';
+      if (score >= 945) return "C2";
+      if (score >= 785) return "C1";
+      if (score >= 550) return "B2";
+      if (score >= 225) return "B1";
     }
   }
 
   // TOEFL iBT conversion
-  if (upperText.includes('TOEFL')) {
+  if (upperText.includes("TOEFL")) {
     const match = upperText.match(/TOEFL\s*(\d+)/);
     if (match) {
       const score = parseInt(match[1]);
-      if (score >= 110) return 'C2';
-      if (score >= 87) return 'C1';
-      if (score >= 57) return 'B2';
-      if (score >= 42) return 'B1';
+      if (score >= 110) return "C2";
+      if (score >= 87) return "C1";
+      if (score >= 57) return "B2";
+      if (score >= 42) return "B1";
     }
   }
 
   // Cambridge exams
-  if (upperText.includes('CPE') || upperText.includes('PROFICIENCY')) return 'C2';
-  if (upperText.includes('CAE') || upperText.includes('ADVANCED')) return 'C1';
-  if (upperText.includes('FCE') || upperText.includes('FIRST')) return 'B2';
-  if (upperText.includes('PET') || upperText.includes('PRELIMINARY')) return 'B1';
+  if (upperText.includes("CPE") || upperText.includes("PROFICIENCY"))
+    return "C2";
+  if (upperText.includes("CAE") || upperText.includes("ADVANCED")) return "C1";
+  if (upperText.includes("FCE") || upperText.includes("FIRST")) return "B2";
+  if (upperText.includes("PET") || upperText.includes("PRELIMINARY"))
+    return "B1";
 
   // Vietnamese descriptions
-  if (upperText.includes('THÀNH THẠO') || upperText.includes('XUẤT SẮC')) return 'C1';
-  if (upperText.includes('GIAO TIẾP TỐT') || upperText.includes('KHÁ')) return 'B2';
-  if (upperText.includes('CƠ BẢN') || upperText.includes('TRUNG BÌNH')) return 'B1';
+  if (upperText.includes("THÀNH THẠO") || upperText.includes("XUẤT SẮC"))
+    return "C1";
+  if (upperText.includes("GIAO TIẾP TỐT") || upperText.includes("KHÁ"))
+    return "B2";
+  if (upperText.includes("CƠ BẢN") || upperText.includes("TRUNG BÌNH"))
+    return "B1";
 
   return null;
 };
@@ -1512,7 +1839,9 @@ const convertLanguageLevelToCEFR = (text: string): string | null => {
  * @param jdText The job description text
  * @returns Promise<Partial<HardFilters>> containing extracted filter values
  */
-export const extractHardFiltersFromJD = async (jdText: string): Promise<Partial<any>> => {
+export const extractHardFiltersFromJD = async (
+  jdText: string,
+): Promise<Partial<any>> => {
   if (!jdText || jdText.trim().length < 50) {
     return {};
   }
@@ -1520,48 +1849,58 @@ export const extractHardFiltersFromJD = async (jdText: string): Promise<Partial<
   const hardFiltersSchema = {
     type: Type.OBJECT,
     properties: {
-      "location": {
+      location: {
         type: Type.STRING,
-        description: "Địa điểm làm việc từ danh sách: Hà Nội, Hải Phòng, Đà Nẵng, Thành phố Hồ Chí Minh, Remote. Trả về chuỗi rỗng nếu không tìm thấy hoặc không khớp."
+        description:
+          "Địa điểm làm việc từ danh sách: Hà Nội, Hải Phòng, Đà Nẵng, Thành phố Hồ Chí Minh, Remote. Trả về chuỗi rỗng nếu không tìm thấy hoặc không khớp.",
       },
-      "minExp": {
+      minExp: {
         type: Type.STRING,
-        description: "Kinh nghiệm tối thiểu từ danh sách: '1', '2', '3', '5' (số năm). Trả về chuỗi rỗng nếu không yêu cầu."
+        description:
+          "Kinh nghiệm tối thiểu từ danh sách: '1', '2', '3', '5' (số năm). Trả về chuỗi rỗng nếu không yêu cầu.",
       },
-      "seniority": {
+      seniority: {
         type: Type.STRING,
-        description: "Cấp bậc từ danh sách: Intern, Junior, Mid-level, Senior, Lead. Trả về chuỗi rỗng nếu không xác định được."
+        description:
+          "Cấp bậc từ danh sách: Intern, Junior, Mid-level, Senior, Lead. Trả về chuỗi rỗng nếu không xác định được.",
       },
-      "education": {
+      education: {
         type: Type.STRING,
-        description: "Bằng cấp từ danh sách: High School (Tốt nghiệp THPT), Associate (Cao đẳng), Bachelor (Cử nhân), Master (Thạc sĩ), PhD (Tiến sĩ). Trả về chuỗi rỗng nếu không yêu cầu."
+        description:
+          "Bằng cấp từ danh sách: High School (Tốt nghiệp THPT), Associate (Cao đẳng), Bachelor (Cử nhân), Master (Thạc sĩ), PhD (Tiến sĩ). Trả về chuỗi rỗng nếu không yêu cầu.",
       },
-      "language": {
+      language: {
         type: Type.STRING,
-        description: "Ngôn ngữ yêu cầu (ví dụ: Tiếng Anh, Tiếng Nhật). Trả về chuỗi rỗng nếu không yêu cầu."
+        description:
+          "Ngôn ngữ yêu cầu (ví dụ: Tiếng Anh, Tiếng Nhật). Trả về chuỗi rỗng nếu không yêu cầu.",
       },
-      "languageLevel": {
+      languageLevel: {
         type: Type.STRING,
-        description: "Trình độ ngôn ngữ từ danh sách: B1, B2, C1, C2. Trả về chuỗi rỗng nếu không xác định."
+        description:
+          "Trình độ ngôn ngữ từ danh sách: B1, B2, C1, C2. Trả về chuỗi rỗng nếu không xác định.",
       },
-      "certificates": {
+      certificates: {
         type: Type.STRING,
-        description: "Chứng chỉ yêu cầu (ví dụ: PMP, IELTS 7.0). Trả về chuỗi rỗng nếu không yêu cầu."
+        description:
+          "Chứng chỉ yêu cầu (ví dụ: PMP, IELTS 7.0). Trả về chuỗi rỗng nếu không yêu cầu.",
       },
-      "workFormat": {
+      workFormat: {
         type: Type.STRING,
-        description: "Hình thức làm việc từ danh sách: Onsite, Hybrid, Remote. Trả về chuỗi rỗng nếu không xác định."
+        description:
+          "Hình thức làm việc từ danh sách: Onsite, Hybrid, Remote. Trả về chuỗi rỗng nếu không xác định.",
       },
-      "contractType": {
+      contractType: {
         type: Type.STRING,
-        description: "Loại hợp đồng từ danh sách: Full-time, Part-time, Intern, Contract. Trả về chuỗi rỗng nếu không xác định."
+        description:
+          "Loại hợp đồng từ danh sách: Full-time, Part-time, Intern, Contract. Trả về chuỗi rỗng nếu không xác định.",
       },
-      "industry": {
+      industry: {
         type: Type.STRING,
-        description: "Ngành nghề chính của công việc. Ví dụ: IT, Kinh doanh, Marketing, Thiết kế, Tài chính, Nhân sự..."
-      }
+        description:
+          "Ngành nghề chính của công việc. Ví dụ: IT, Kinh doanh, Marketing, Thiết kế, Tài chính, Nhân sự...",
+      },
     },
-    required: []
+    required: [],
   };
 
   const prompt = `Bạn là chuyên gia phân tích JD thông minh. Nhiệm vụ: Trích xuất và CHUYỂN ĐỔI thông tin tiêu chí lọc từ văn bản JD.
@@ -1641,7 +1980,7 @@ Trả về JSON với các trường đã trích xuất và chuyển đổi:`;
       topP: 0.3,
       topK: 5,
       generationConfig: {
-        responseMimeType: 'application/json',
+        responseMimeType: "application/json",
         responseSchema: hardFiltersSchema,
       },
     });
@@ -1649,7 +1988,7 @@ Trả về JSON với các trường đã trích xuất và chuyển đổi:`;
     let result = response.text.trim();
 
     // Remove any markdown formatting
-    result = result.replace(/```json\s*|\s*```/g, '');
+    result = result.replace(/```json\s*|\s*```/g, "");
 
     const hardFilters = JSON.parse(result);
 
@@ -1657,19 +1996,25 @@ Trả về JSON với các trường đã trích xuất và chuyển đổi:`;
     const validatedFilters: any = {};
 
     // Location validation with smart mapping
-    const validLocations = ['Hà Nội', 'Hải Phòng', 'Đà Nẵng', 'Thành phố Hồ Chí Minh', 'Remote'];
+    const validLocations = [
+      "Hà Nội",
+      "Hải Phòng",
+      "Đà Nẵng",
+      "Thành phố Hồ Chí Minh",
+      "Remote",
+    ];
     const locationMap: Record<string, string> = {
-      'HN': 'Hà Nội',
-      'Hanoi': 'Hà Nội',
-      'Ha Noi': 'Hà Nội',
-      'HCM': 'Thành phố Hồ Chí Minh',
-      'TP.HCM': 'Thành phố Hồ Chí Minh',
-      'Sai Gon': 'Thành phố Hồ Chí Minh',
-      'Saigon': 'Thành phố Hồ Chí Minh',
-      'Da Nang': 'Đà Nẵng',
-      'Hai Phong': 'Hải Phòng',
-      'WFH': 'Remote',
-      'Work from home': 'Remote'
+      HN: "Hà Nội",
+      Hanoi: "Hà Nội",
+      "Ha Noi": "Hà Nội",
+      HCM: "Thành phố Hồ Chí Minh",
+      "TP.HCM": "Thành phố Hồ Chí Minh",
+      "Sai Gon": "Thành phố Hồ Chí Minh",
+      Saigon: "Thành phố Hồ Chí Minh",
+      "Da Nang": "Đà Nẵng",
+      "Hai Phong": "Hải Phòng",
+      WFH: "Remote",
+      "Work from home": "Remote",
     };
 
     if (hardFilters.location) {
@@ -1682,7 +2027,7 @@ Trả về JSON với các trường đã trích xuất và chuyển đổi:`;
     }
 
     // Experience validation with smart parsing
-    const validExp = ['1', '2', '3', '5'];
+    const validExp = ["1", "2", "3", "5"];
     if (hardFilters.minExp) {
       const exp = hardFilters.minExp.toString().trim();
       if (validExp.includes(exp)) {
@@ -1693,27 +2038,27 @@ Trả về JSON với các trường đã trích xuất và chuyển đổi:`;
         if (match) {
           const num = match[1];
           // Round to nearest valid value
-          if (num === '0' || num === '1') validatedFilters.minExp = '1';
-          else if (num === '2') validatedFilters.minExp = '2';
-          else if (num === '3' || num === '4') validatedFilters.minExp = '3';
-          else if (parseInt(num) >= 5) validatedFilters.minExp = '5';
+          if (num === "0" || num === "1") validatedFilters.minExp = "1";
+          else if (num === "2") validatedFilters.minExp = "2";
+          else if (num === "3" || num === "4") validatedFilters.minExp = "3";
+          else if (parseInt(num) >= 5) validatedFilters.minExp = "5";
         }
       }
     }
 
     // Seniority validation with smart mapping
-    const validSeniority = ['Intern', 'Junior', 'Mid-level', 'Senior', 'Lead'];
+    const validSeniority = ["Intern", "Junior", "Mid-level", "Senior", "Lead"];
     const seniorityMap: Record<string, string> = {
-      'Fresher': 'Junior',
-      'Entry': 'Junior',
-      'Entry-level': 'Junior',
-      'Middle': 'Mid-level',
-      'Mid': 'Mid-level',
-      'Staff': 'Senior',
-      'Principal': 'Lead',
-      'Manager': 'Lead',
-      'Tech Lead': 'Lead',
-      'Team Lead': 'Lead'
+      Fresher: "Junior",
+      Entry: "Junior",
+      "Entry-level": "Junior",
+      Middle: "Mid-level",
+      Mid: "Mid-level",
+      Staff: "Senior",
+      Principal: "Lead",
+      Manager: "Lead",
+      "Tech Lead": "Lead",
+      "Team Lead": "Lead",
     };
 
     if (hardFilters.seniority) {
@@ -1726,19 +2071,25 @@ Trả về JSON với các trường đã trích xuất và chuyển đổi:`;
     }
 
     // Education validation with smart mapping
-    const validEducation = ['High School', 'Associate', 'Bachelor', 'Master', 'PhD'];
+    const validEducation = [
+      "High School",
+      "Associate",
+      "Bachelor",
+      "Master",
+      "PhD",
+    ];
     const educationMap: Record<string, string> = {
-      'THPT': 'High School',
-      'Tốt nghiệp THPT': 'High School',
-      'Cao đẳng': 'Associate',
-      'College': 'Associate',
-      'Đại học': 'Bachelor',
-      'Cử nhân': 'Bachelor',
-      'Kỹ sư': 'Bachelor',
-      'University': 'Bachelor',
-      'Thạc sĩ': 'Master',
-      'Tiến sĩ': 'PhD',
-      'Doctorate': 'PhD'
+      THPT: "High School",
+      "Tốt nghiệp THPT": "High School",
+      "Cao đẳng": "Associate",
+      College: "Associate",
+      "Đại học": "Bachelor",
+      "Cử nhân": "Bachelor",
+      "Kỹ sư": "Bachelor",
+      University: "Bachelor",
+      "Thạc sĩ": "Master",
+      "Tiến sĩ": "PhD",
+      Doctorate: "PhD",
     };
 
     if (hardFilters.education) {
@@ -1751,23 +2102,27 @@ Trả về JSON với các trường đã trích xuất và chuyển đổi:`;
     }
 
     // Language validation (free text but clean and normalize)
-    if (hardFilters.language && typeof hardFilters.language === 'string' && hardFilters.language.trim()) {
+    if (
+      hardFilters.language &&
+      typeof hardFilters.language === "string" &&
+      hardFilters.language.trim()
+    ) {
       const lang = hardFilters.language.trim();
       // Normalize common language names
       const langMap: Record<string, string> = {
-        'English': 'Tiếng Anh',
-        'Vietnamese': 'Tiếng Việt',
-        'Japanese': 'Tiếng Nhật',
-        'Korean': 'Tiếng Hàn',
-        'Chinese': 'Tiếng Trung',
-        'French': 'Tiếng Pháp',
-        'German': 'Tiếng Đức'
+        English: "Tiếng Anh",
+        Vietnamese: "Tiếng Việt",
+        Japanese: "Tiếng Nhật",
+        Korean: "Tiếng Hàn",
+        Chinese: "Tiếng Trung",
+        French: "Tiếng Pháp",
+        German: "Tiếng Đức",
       };
       validatedFilters.language = langMap[lang] || lang;
     }
 
     // Language level validation with SMART CONVERSION
-    const validLangLevels = ['B1', 'B2', 'C1', 'C2'];
+    const validLangLevels = ["B1", "B2", "C1", "C2"];
     if (hardFilters.languageLevel) {
       const level = hardFilters.languageLevel.trim().toUpperCase();
       if (validLangLevels.includes(level)) {
@@ -1792,22 +2147,26 @@ Trả về JSON với các trường đã trích xuất và chuyển đổi:`;
     }
 
     // Certificates validation (free text but clean)
-    if (hardFilters.certificates && typeof hardFilters.certificates === 'string' && hardFilters.certificates.trim()) {
+    if (
+      hardFilters.certificates &&
+      typeof hardFilters.certificates === "string" &&
+      hardFilters.certificates.trim()
+    ) {
       validatedFilters.certificates = hardFilters.certificates.trim();
     }
 
     // Work format validation with smart mapping
-    const validWorkFormats = ['Onsite', 'Hybrid', 'Remote'];
+    const validWorkFormats = ["Onsite", "Hybrid", "Remote"];
     const workFormatMap: Record<string, string> = {
-      'Office': 'Onsite',
-      'Văn phòng': 'Onsite',
-      'Tại văn phòng': 'Onsite',
-      'WFH': 'Remote',
-      'Work from home': 'Remote',
-      'Làm từ xa': 'Remote',
-      'Flexible': 'Hybrid',
-      'Linh hoạt': 'Hybrid',
-      'Kết hợp': 'Hybrid'
+      Office: "Onsite",
+      "Văn phòng": "Onsite",
+      "Tại văn phòng": "Onsite",
+      WFH: "Remote",
+      "Work from home": "Remote",
+      "Làm từ xa": "Remote",
+      Flexible: "Hybrid",
+      "Linh hoạt": "Hybrid",
+      "Kết hợp": "Hybrid",
     };
 
     if (hardFilters.workFormat) {
@@ -1820,14 +2179,14 @@ Trả về JSON với các trường đã trích xuất và chuyển đổi:`;
     }
 
     // Contract type validation with smart mapping
-    const validContractTypes = ['Full-time', 'Part-time', 'Intern', 'Contract'];
+    const validContractTypes = ["Full-time", "Part-time", "Intern", "Contract"];
     const contractMap: Record<string, string> = {
-      'Toàn thời gian': 'Full-time',
-      'Bán thời gian': 'Part-time',
-      'Thực tập': 'Intern',
-      'Thời vụ': 'Contract',
-      'Freelance': 'Contract',
-      'Permanent': 'Full-time'
+      "Toàn thời gian": "Full-time",
+      "Bán thời gian": "Part-time",
+      "Thực tập": "Intern",
+      "Thời vụ": "Contract",
+      Freelance: "Contract",
+      Permanent: "Full-time",
     };
 
     if (hardFilters.contractType) {
@@ -1840,12 +2199,15 @@ Trả về JSON với các trường đã trích xuất và chuyển đổi:`;
     }
 
     // Industry validation
-    if (hardFilters.industry && typeof hardFilters.industry === 'string' && hardFilters.industry.trim()) {
+    if (
+      hardFilters.industry &&
+      typeof hardFilters.industry === "string" &&
+      hardFilters.industry.trim()
+    ) {
       validatedFilters.industry = hardFilters.industry.trim();
     }
 
     return validatedFilters;
-
   } catch (error) {
     console.error("Lỗi khi trích xuất hard filters từ JD:", error);
     return {};
@@ -1861,8 +2223,14 @@ export interface JDMetadata {
   requirementsSummary: string;
 }
 
-export const extractJDMetadata = async (jdText: string): Promise<JDMetadata> => {
-  const empty: JDMetadata = { companyName: '', salary: '', requirementsSummary: '' };
+export const extractJDMetadata = async (
+  jdText: string,
+): Promise<JDMetadata> => {
+  const empty: JDMetadata = {
+    companyName: "",
+    salary: "",
+    requirementsSummary: "",
+  };
   if (!jdText || jdText.trim().length < 50) return empty;
 
   const schema = {
@@ -1870,18 +2238,21 @@ export const extractJDMetadata = async (jdText: string): Promise<JDMetadata> => 
     properties: {
       companyName: {
         type: Type.STRING,
-        description: "Tên công ty tuyển dụng. Trả về chuỗi rỗng nếu không tìm thấy."
+        description:
+          "Tên công ty tuyển dụng. Trả về chuỗi rỗng nếu không tìm thấy.",
       },
       salary: {
         type: Type.STRING,
-        description: "Mức lương hoặc khoảng lương đề xuất (VD: '15-25 triệu', 'Thỏa thuận', '$2000-$3000'). Trả về chuỗi rỗng nếu không đề cập."
+        description:
+          "Mức lương hoặc khoảng lương đề xuất (VD: '15-25 triệu', 'Thỏa thuận', '$2000-$3000'). Trả về chuỗi rỗng nếu không đề cập.",
       },
       requirementsSummary: {
         type: Type.STRING,
-        description: "Tóm tắt ngắn gọn 1-2 câu về những yêu cầu chính của vị trí này (kỹ năng, kinh nghiệm, phẩm chất cốt lõi). Tối đa 120 ký tự."
-      }
+        description:
+          "Tóm tắt ngắn gọn 1-2 câu về những yêu cầu chính của vị trí này (kỹ năng, kinh nghiệm, phẩm chất cốt lõi). Tối đa 120 ký tự.",
+      },
     },
-    required: ["companyName", "salary", "requirementsSummary"]
+    required: ["companyName", "salary", "requirementsSummary"],
   };
 
   const prompt = `Bạn là AI đọc JD và trích xuất 3 thông tin nhanh sau đây:
@@ -1897,18 +2268,20 @@ Trả về JSON.`;
 
   try {
     const response = await generateContentWithFallback(MODEL_NAME, prompt, {
-      responseMimeType: 'application/json',
+      responseMimeType: "application/json",
       responseSchema: schema,
       temperature: 0.1,
       topP: 0.3,
       topK: 5,
     });
 
-    const result = JSON.parse(response.text.trim().replace(/```json\s*|\s*```/g, ''));
+    const result = JSON.parse(
+      response.text.trim().replace(/```json\s*|\s*```/g, ""),
+    );
     return {
-      companyName: result.companyName?.trim() || '',
-      salary: result.salary?.trim() || '',
-      requirementsSummary: result.requirementsSummary?.trim() || '',
+      companyName: result.companyName?.trim() || "",
+      salary: result.salary?.trim() || "",
+      requirementsSummary: result.requirementsSummary?.trim() || "",
     };
   } catch (error) {
     console.error("Lỗi khi trích xuất JD metadata:", error);
@@ -1919,23 +2292,29 @@ Trả về JSON.`;
 type FileLookupMap = Map<string, File>;
 type FileTextMap = Map<string, string>;
 
-const containsKeyword = (value: string | undefined, keywords: string[]): boolean => {
+const containsKeyword = (
+  value: string | undefined,
+  keywords: string[],
+): boolean => {
   if (!value) return false;
   const normalized = value.toLowerCase();
   return keywords.some((keyword) => normalized.includes(keyword));
 };
 
-const detectIndustry = (candidate: Candidate, hardFilters: HardFilters): SupportedIndustry | null => {
+const detectIndustry = (
+  candidate: Candidate,
+  hardFilters: HardFilters,
+): SupportedIndustry | null => {
   const check = (keywords: string[]) =>
     containsKeyword(candidate.industry, keywords) ||
     containsKeyword(candidate.department, keywords) ||
     containsKeyword(candidate.jobTitle, keywords) ||
     containsKeyword(hardFilters.industry, keywords);
 
-  if (check(IT_KEYWORDS)) return 'it';
-  if (check(SALES_KEYWORDS)) return 'sales';
-  if (check(MARKETING_KEYWORDS)) return 'marketing';
-  if (check(DESIGN_KEYWORDS)) return 'design';
+  if (check(IT_KEYWORDS)) return "it";
+  if (check(SALES_KEYWORDS)) return "sales";
+  if (check(MARKETING_KEYWORDS)) return "marketing";
+  if (check(DESIGN_KEYWORDS)) return "design";
 
   return null;
 };
@@ -1943,7 +2322,7 @@ const detectIndustry = (candidate: Candidate, hardFilters: HardFilters): Support
 const getCvTextForFile = async (
   fileName: string,
   fileLookup: FileLookupMap,
-  fileTextMap: FileTextMap
+  fileTextMap: FileTextMap,
 ): Promise<string | null> => {
   if (!fileName) return null;
   const cached = fileTextMap.get(fileName);
@@ -1963,7 +2342,7 @@ const applyIndustryBaselineEnhancement = async (
   fileName: string,
   fileLookup: FileLookupMap,
   fileTextMap: FileTextMap,
-  hardFilters: HardFilters
+  hardFilters: HardFilters,
 ): Promise<void> => {
   if (!candidate || candidate.embeddingInsights) return;
 
@@ -1980,35 +2359,45 @@ const applyIndustryBaselineEnhancement = async (
 
     if (!candidate.analysis) return;
 
-    if (!Array.isArray(candidate.analysis['Chi tiết'])) {
-      candidate.analysis['Chi tiết'] = [];
+    if (!Array.isArray(candidate.analysis["Chi tiết"])) {
+      candidate.analysis["Chi tiết"] = [];
     }
 
     const evidence = insight.topMatches
       .slice(0, 3)
-      .map((match) => `${match.name || match.role || match.id} ${(match.similarity * 100).toFixed(1)}%`)
-      .join('; ');
+      .map(
+        (match) =>
+          `${match.name || match.role || match.id} ${(match.similarity * 100).toFixed(1)}%`,
+      )
+      .join("; ");
 
     const industryNameMap: Record<string, string> = {
-      it: 'IT',
-      sales: 'Kinh doanh',
-      marketing: 'Marketing',
-      design: 'Thiết kế',
+      it: "IT",
+      sales: "Kinh doanh",
+      marketing: "Marketing",
+      design: "Thiết kế",
     };
 
     const industryName = industryNameMap[industry] || industry;
 
-    candidate.analysis['Chi tiết'].unshift({
-      'Tiêu chí': `Chuẩn mẫu ${industryName}`,
-      'Điểm': `${insight.bonusPoints.toFixed(1)}/5`,
-      'Công thức': `Similarity ${(insight.averageSimilarity * 100).toFixed(1)}% => +${insight.bonusPoints.toFixed(1)} điểm`,
-      'Dẫn chứng': evidence || `Khớp cao với thư viện CV ${industryName} chuẩn.`,
-      'Giải thích': `CV tương đồng thư viện CV ${industryName} chuẩn nên được cộng điểm baseline phản ánh độ phù hợp thực tế.`,
+    candidate.analysis["Chi tiết"].unshift({
+      "Tiêu chí": `Chuẩn mẫu ${industryName}`,
+      Điểm: `${insight.bonusPoints.toFixed(1)}/5`,
+      "Công thức": `Similarity ${(insight.averageSimilarity * 100).toFixed(1)}% => +${insight.bonusPoints.toFixed(1)} điểm`,
+      "Dẫn chứng":
+        evidence || `Khớp cao với thư viện CV ${industryName} chuẩn.`,
+      "Giải thích": `CV tương đồng thư viện CV ${industryName} chuẩn nên được cộng điểm baseline phản ánh độ phù hợp thực tế.`,
     });
 
-    const currentScore = typeof candidate.analysis['Tổng điểm'] === 'number' ? candidate.analysis['Tổng điểm'] : 0;
-    candidate.analysis['Tổng điểm'] = Math.min(100, currentScore + insight.bonusPoints);
+    const currentScore =
+      typeof candidate.analysis["Tổng điểm"] === "number"
+        ? candidate.analysis["Tổng điểm"]
+        : 0;
+    candidate.analysis["Tổng điểm"] = Math.min(
+      100,
+      currentScore + insight.bonusPoints,
+    );
   } catch (error) {
-    console.warn('[EmbeddingBaseline] Không thể áp dụng baseline:', error);
+    console.warn("[EmbeddingBaseline] Không thể áp dụng baseline:", error);
   }
 };

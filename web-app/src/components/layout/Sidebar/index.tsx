@@ -1,6 +1,6 @@
-﻿import React, { useState } from 'react';
-import { Home, FileText, Sliders, Upload, Sparkles, History, ChevronLeft, ChevronRight } from 'lucide-react';
-import type { AppStep, HistoryEntry } from '../../../types';
+﻿import React, { useState, useEffect, useRef } from "react";
+import { Home, FileText, Sliders, Upload, Sparkles } from "lucide-react";
+import type { AppStep } from "../../../types";
 
 interface SidebarProps {
   activeStep: AppStep;
@@ -16,389 +16,471 @@ interface SidebarProps {
   onCollapsedChange?: (collapsed: boolean) => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeStep, setActiveStep, completedSteps, onReset, onLogout, userEmail, onLoginRequest, isOpen = true, onClose, onShowSettings, onCollapsedChange }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+const STEPS: {
+  key: AppStep;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  desc: string;
+}[] = [
+  { key: "home", icon: Home, label: "Trang chủ", desc: "Dashboard" },
+  { key: "jd", icon: FileText, label: "Mô tả Công việc", desc: "Bước 1/4" },
+  { key: "weights", icon: Sliders, label: "Trọng số", desc: "Bước 2/4" },
+  { key: "upload", icon: Upload, label: "Tải lên CV", desc: "Bước 3/4" },
+  { key: "analysis", icon: Sparkles, label: "Phân Tích AI", desc: "Bước 4/4" },
+];
 
-  // Sync collapsed state on mount
-  React.useEffect(() => {
-    if (onCollapsedChange) {
-      onCollapsedChange(isCollapsed);
-    }
-  }, []);
-
-  // Collapse feature removed
-  const toggleCollapse = () => {
-    setIsCollapsed(false);
-  };
-
-  // Hàm xử lý khi click vào menu item
-  const handleStepClick = (step: AppStep) => {
-    if (isStepEnabled(step)) {
-      setActiveStep(step);
-      // Removed auto-close: sidebar stays open
-    }
-  };
-  const steps: { key: AppStep; icon: React.ComponentType<{ className?: string }>; label: string }[] = [
-    { key: 'home', icon: Home, label: 'Trang chủ' },
-    { key: 'jd', icon: FileText, label: 'Mô tả Công việc' },
-    { key: 'weights', icon: Sliders, label: 'Phân bổ Trọng số' },
-    { key: 'upload', icon: Upload, label: 'Tải lên CV' },
-    { key: 'analysis', icon: Sparkles, label: 'Phân Tích AI' },
-  ];
-
-
-  const isStepEnabled = (step: AppStep): boolean => {
-    if (step === 'home') return true;
-    if (step === 'jd') return true;
-    if (step === 'weights') return completedSteps.includes('jd');
-    if (step === 'upload') return completedSteps.includes('jd') && completedSteps.includes('weights');
-    if (step === 'analysis') return completedSteps.includes('jd') && completedSteps.includes('weights') && completedSteps.includes('upload');
-    if (step === 'process') return true;
-    return false;
-  };
-
-  const renderStep = (step: { key: AppStep; icon: React.ComponentType<{ className?: string }>; label: string }) => {
-    const isActive = activeStep === step.key;
-    const isEnabled = isStepEnabled(step.key);
-    const isCompleted = completedSteps.includes(step.key);
-    const Icon = step.icon;
-
-    const getIconColor = () => {
-      if (isActive) return 'text-cyan-400';
-      if (isCompleted) return 'text-emerald-400';
-      if (!isEnabled) return 'text-slate-600';
-      return 'text-slate-400 group-hover:text-slate-200';
-    };
-
-    return (
-      <li className={`${isCollapsed ? 'md:px-2 px-2' : 'px-2'}`} key={step.key}>
-        <button
-          className={`relative w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group
-            ${isCollapsed ? 'md:justify-center md:px-0' : 'justify-start'}
-            ${isActive
-              ? 'bg-gradient-to-r from-cyan-500/20 to-emerald-500/20 text-cyan-100 shadow-lg shadow-cyan-500/10'
-              : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'} 
-            ${!isEnabled ? 'opacity-40 cursor-not-allowed grayscale' : 'cursor-pointer'}`}
-          disabled={!isEnabled}
-          onClick={() => handleStepClick(step.key)}
-          title={isCollapsed ? step.label : ''}
-        >
-          {/* Active Left Border */}
-          {isActive && (
-            <div className="hidden md:block absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-gradient-to-b from-cyan-400 to-emerald-400 rounded-r-lg shadow-lg"></div>
-          )}
-
-          <div className={`flex items-center justify-center transition-all duration-200 ${getIconColor()} ${isActive ? 'scale-110' : ''} flex-shrink-0`}>
-            <Icon className="w-5 h-5" />
-          </div>
-
-          <span className={`text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden
-            ${isCollapsed ? 'md:w-0 md:max-w-0 md:opacity-0 md:ml-0' : 'max-w-[200px] opacity-100'}
-            `}>
-            {step.label}
-          </span>
-
-          {/* Completed Indicator */}
-          {isCompleted && !isActive && (
-            <div className={`rounded-full transition-all duration-300 ${isCollapsed ? 'md:w-1.5 md:h-1.5 md:opacity-100 md:ml-0 w-0 h-0 opacity-0 ml-0' : 'w-1.5 h-1.5 opacity-100 ml-auto'
-              } ${isActive ? 'bg-cyan-400' : 'bg-emerald-500'} shadow-lg`} />
-          )}
-        </button>
-      </li>
-    );
-  }
-
-  return (
-    <>
-      {/* Overlay cho mobile khi sidebar mở */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/30 z-40 md:hidden"
-        // Removed onClose: sidebar stays open
-        />
-      )}
-
-      <aside
-        id="cv-sidebar"
-        className={`flex flex-col fixed top-0 left-0 h-screen bg-gradient-to-b from-slate-950 to-slate-900 border-r border-slate-800/60 shadow-2xl z-50 transition-[width,transform] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] will-change-[width,transform] ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-          } ${isCollapsed ? 'md:w-[72px]' : 'md:w-64'} w-64`}
-        style={{ overflow: 'visible' }}
-      >
-        {/* Compact Logo & Brand - Top */}
-        <div className={`flex items-center gap-3 border-b border-slate-800/40 transition-all duration-300 ${isCollapsed ? 'md:justify-center md:px-3 px-4 py-5' : 'px-4 py-5 justify-start'}`}>
-          {/* Logo Button */}
-          <div
-            className={`flex items-center justify-center w-10 h-10 rounded-xl border border-slate-700/50 transition-all duration-300 overflow-hidden shadow-lg flex-shrink-0 bg-slate-800/50 md:cursor-default`}
-          >
-            <img
-              src="/images/logos/logo.jpg"
-              alt="Support HR Logo"
-              className="w-full h-full object-contain"
-            />
-          </div>
-
-          {/* Brand Text - Only when expanded */}
-          <div className={`flex-1 min-w-0 overflow-hidden transition-all duration-200 ${isCollapsed ? 'md:w-0 md:opacity-0 md:pointer-events-none' : 'opacity-100'}`}>
-            <h1 className="text-white font-bold text-sm leading-tight whitespace-nowrap">Support HR</h1>
-            <p className="text-[9px] text-slate-500 font-medium tracking-wider uppercase whitespace-nowrap">AI Recruitment</p>
-          </div>
-
-          {/* Collapse Toggle - Only on desktop when expanded */}
-          {/* Collapse Toggle removed */}
-        </div>
-
-        {/* New Campaign Button */}
-        <div className={`transition-all duration-300 ${isCollapsed ? 'md:px-2 px-4 py-3 justify-center' : 'px-4 py-4'}`}>
-          <button
-            onClick={() => {
-              if (completedSteps.includes('upload')) {
-                onReset();
-                if (typeof window !== 'undefined' && window.innerWidth < 768 && onClose) {
-                  onClose();
-                }
-              }
-            }}
-            disabled={!completedSteps.includes('upload')}
-            className={`flex items-center justify-center gap-2 font-medium transition-all duration-300 group rounded-xl ${completedSteps.includes('upload')
-              ? 'bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white shadow-lg shadow-cyan-900/20 hover:shadow-cyan-500/30 cursor-pointer'
-              : 'bg-slate-800/20 text-slate-600 cursor-not-allowed border border-slate-800'
-              } ${isCollapsed
-                ? 'md:w-10 md:h-10 md:p-0 w-full py-2.5 px-3'
-                : 'w-full py-2.5 px-4'
-              }`}
-            title={isCollapsed ? 'Tạo chiến dịch mới' : ''}
-          >
-            <i className={`fa-solid fa-plus text-sm`}></i>
-            {!isCollapsed && <span className="text-sm font-medium">Chiến Dịch Mới</span>}
-          </button>
-        </div>
-
-        {/* Navigation Steps */}
-        <nav className="flex-1 overflow-y-auto custom-scrollbar py-2">
-          <ul className="flex flex-col gap-1">
-            {steps.map(renderStep)}
-          </ul>
-        </nav>
-
-
-      </aside>
-    </>
-  );
-};
-
-// User Profile Component
-const UserProfileSection: React.FC<{
+// ─── User profile ──────────────────────────────────────────────────────────
+const UserProfile: React.FC<{
   userEmail?: string;
+  collapsed?: boolean;
   onLogout?: () => void;
   onLoginRequest?: () => void;
-  isCollapsed: boolean;
-  onClose?: () => void;
   onShowSettings?: () => void;
-}> = ({ userEmail, onLogout, onLoginRequest, isCollapsed, onClose, onShowSettings }) => {
-  const [showMenu, setShowMenu] = React.useState(false);
-  const [userAvatar, setUserAvatar] = React.useState<string | null>(null);
-  const [userName, setUserName] = React.useState<string>('');
+}> = ({
+  userEmail,
+  collapsed = false,
+  onLogout,
+  onLoginRequest,
+  onShowSettings,
+}) => {
+  const [showMenu, setShowMenu] = useState(false);
+  const [userAvatar, setUserAvatar] = useState<string | null>(null);
+  const [userName, setUserName] = useState("");
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  // Load avatar and user name
-  React.useEffect(() => {
-    if (userEmail) {
-      const loadUserData = async () => {
-        try {
-          const { onAuthStateChanged } = await import('firebase/auth');
-          const { auth } = await import('../../../config/firebase');
-          const { UserProfileService } = await import('../../../services/storage/userProfileService');
-
-          const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            if (user && user.email === userEmail) {
-              // Set display name from Google
-              if (user.displayName) {
-                setUserName(user.displayName);
-              } else {
-                setUserName(userEmail.split('@')[0]);
-              }
-
-              // Load avatar - ưu tiên Google photoURL
-              if (user.photoURL) {
-                // Đăng nhập Google - lấy avatar từ Google
-                setUserAvatar(user.photoURL);
-              } else {
-                // Không có Google photoURL - kiểm tra database hoặc localStorage
-                try {
-                  const profile = await UserProfileService.getUserProfile(user.uid);
-                  if (profile?.avatar) {
-                    setUserAvatar(profile.avatar);
-                  } else {
-                    const localAvatar = localStorage.getItem(`avatar_${userEmail}`);
-                    setUserAvatar(localAvatar);
-                  }
-                } catch {
-                  const localAvatar = localStorage.getItem(`avatar_${userEmail}`);
-                  setUserAvatar(localAvatar);
-                }
-              }
+  useEffect(() => {
+    if (!userEmail) return;
+    const load = async () => {
+      try {
+        const { onAuthStateChanged } = await import("firebase/auth");
+        const { auth } = await import("../../../config/firebase");
+        const { UserProfileService } =
+          await import("../../../services/storage/userProfileService");
+        const unsub = onAuthStateChanged(auth, async (user) => {
+          if (!user || user.email !== userEmail) return;
+          setUserName(user.displayName || userEmail.split("@")[0]);
+          if (user.photoURL) {
+            setUserAvatar(user.photoURL);
+          } else {
+            try {
+              const profile = await UserProfileService.getUserProfile(user.uid);
+              setUserAvatar(
+                profile?.avatar || localStorage.getItem(`avatar_${userEmail}`),
+              );
+            } catch {
+              setUserAvatar(localStorage.getItem(`avatar_${userEmail}`));
             }
-          });
-          return () => unsubscribe();
-        } catch (error) {
-          console.error('Error loading user data:', error);
-          setUserName(userEmail.split('@')[0]);
-        }
-      };
-      loadUserData();
-    }
+          }
+        });
+        return unsub;
+      } catch {
+        setUserName(userEmail.split("@")[0]);
+      }
+    };
+    load();
   }, [userEmail]);
 
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node))
+        setShowMenu(false);
+    };
+    if (showMenu) document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showMenu]);
+
   const getInitials = (name: string) => {
-    const parts = name.trim().split(' ');
-    if (parts.length >= 2) {
-      return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
-    }
-    return name.charAt(0).toUpperCase();
+    const parts = name.trim().split(" ");
+    return parts.length >= 2
+      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+      : (name[0]?.toUpperCase() ?? "?");
   };
 
-  const getAvatarColor = (email: string) => {
-    const colors = ['bg-red-500', 'bg-green-500', 'bg-blue-500', 'bg-yellow-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500'];
-    return colors[email.charCodeAt(0) % colors.length];
-  };
+  const avatarColor = userEmail
+    ? [
+        "bg-violet-600",
+        "bg-cyan-600",
+        "bg-emerald-600",
+        "bg-rose-600",
+        "bg-amber-600",
+      ][userEmail.charCodeAt(0) % 5]
+    : "bg-slate-700";
 
-  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file && userEmail) {
-      if (file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/jpg') {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          const avatarDataUrl = e.target?.result as string;
-          setUserAvatar(avatarDataUrl);
-
-          try {
-            const { auth } = await import('../../../config/firebase');
-            const { UserProfileService } = await import('../../../services/storage/userProfileService');
-            const currentUser = auth.currentUser;
-
-            if (currentUser) {
-              await UserProfileService.updateUserAvatar(currentUser.uid, avatarDataUrl);
-            } else {
-              localStorage.setItem(`avatar_${userEmail}`, avatarDataUrl);
-            }
-          } catch {
-            localStorage.setItem(`avatar_${userEmail}`, avatarDataUrl);
-          }
-        };
-        reader.readAsDataURL(file);
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !userEmail) return;
+    if (!["image/jpeg", "image/png", "image/jpg"].includes(file.type)) return;
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const url = ev.target?.result as string;
+      setUserAvatar(url);
+      try {
+        const { auth } = await import("../../../config/firebase");
+        const { UserProfileService } =
+          await import("../../../services/storage/userProfileService");
+        if (auth.currentUser) {
+          await UserProfileService.updateUserAvatar(auth.currentUser.uid, url);
+        } else {
+          localStorage.setItem(`avatar_${userEmail}`, url);
+        }
+      } catch {
+        localStorage.setItem(`avatar_${userEmail}`, url);
       }
-    }
+    };
+    reader.readAsDataURL(file);
   };
 
   if (!userEmail) {
     return onLoginRequest ? (
-      <div className={`border-t border-slate-800/40 ${isCollapsed ? 'md:p-2 p-3' : 'p-3'}`}>
+      <div className={`p-3 border-t border-white/5 ${collapsed ? "px-2" : ""}`}>
         <button
           onClick={onLoginRequest}
-          className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg transition-all duration-200 ${isCollapsed ? 'md:justify-center' : ''}`}
-          title={isCollapsed ? 'Đăng nhập' : ''}
+          className={`w-full flex items-center justify-center gap-2 h-9 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:brightness-110 text-white font-bold transition-all ${collapsed ? "px-0" : "text-[12px]"}`}
         >
-          <i className="fa-solid fa-right-to-bracket text-sm"></i>
-          <span className={`text-xs font-medium transition-all duration-500 overflow-hidden ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[200px] opacity-100'
-            }`}>Đăng nhập</span>
+          <i className="fa-solid fa-right-to-bracket text-xs" />
+          {!collapsed && <span>Đăng nhập</span>}
         </button>
       </div>
     ) : null;
   }
 
   return (
-    <div className={`transition-all duration-300 ${isCollapsed ? 'md:p-2 p-3' : 'p-3'}`}>
-      <div className="relative">
-        {/* Avatar Button */}
-        <button
-          onClick={() => setShowMenu(!showMenu)}
-          className={`w-full flex items-center gap-3 py-2.5 px-2 text-slate-300 hover:bg-slate-800/50 rounded-lg transition-all duration-200 group ${isCollapsed ? 'justify-center md:justify-center' : ''}`}
-          title={isCollapsed ? userEmail || 'Menu' : ''}
+    <div
+      className={`border-t border-white/5 relative ${collapsed ? "p-2" : "p-3"}`}
+      ref={menuRef}
+    >
+      <button
+        onClick={() => setShowMenu((p) => !p)}
+        className={`w-full flex items-center rounded-xl hover:bg-slate-800/60 transition-colors group ${collapsed ? "justify-center p-2" : "gap-2.5 px-2 py-2"}`}
+        title={collapsed ? userName || userEmail : undefined}
+      >
+        <div
+          className={`rounded-lg flex items-center justify-center text-white text-[11px] font-bold flex-shrink-0 overflow-hidden border border-white/10 ${!userAvatar ? avatarColor : ""} ${collapsed ? "w-8 h-8" : "w-8 h-8"}`}
         >
-          <div className={`rounded-lg flex items-center justify-center text-white font-bold text-xs border border-cyan-400/50 overflow-hidden flex-shrink-0 hover:border-cyan-400 transition-colors ${isCollapsed ? 'w-10 h-10' : 'w-9 h-9'
-            }`}>
-            {userAvatar ? (
-              <img src={userAvatar} alt="Avatar" className="w-full h-full object-cover" />
-            ) : (
-              <div className={`w-full h-full ${getAvatarColor(userEmail)} flex items-center justify-center text-xs`}>
-                {getInitials(userName || userEmail)}
-              </div>
-            )}
-          </div>
-          <div className={`flex-1 min-w-0 text-left transition-all duration-500 overflow-hidden ${isCollapsed ? 'max-w-0 opacity-0' : 'max-w-[200px] opacity-100 ml-3'
-            }`}>
-            <p className="text-xs font-medium text-white truncate">{userName || userEmail.split('@')[0]}</p>
-            <p className="text-[10px] text-slate-500 truncate">{userEmail}</p>
-          </div>
-        </button>
-
-        {/* Dropdown Menu */}
-        {showMenu && (
-          <>
-            <div
-              className="fixed inset-0 z-40"
-              onClick={() => setShowMenu(false)}
+          {userAvatar ? (
+            <img
+              src={userAvatar}
+              alt="avatar"
+              className="w-full h-full object-cover"
             />
-            <div className={`absolute z-50 bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-700/50 rounded-xl shadow-2xl shadow-black/50 ring-1 ring-white/10 overflow-hidden transition-all duration-200 
-              ${isCollapsed
-                ? 'left-full bottom-0 ml-3 w-56 origin-bottom-left'
-                : 'bottom-full left-0 right-0 mx-2 mb-3 w-56 origin-bottom'
-              }`}>
-
-              {/* Header */}
-              <div className="px-3 py-3 bg-slate-800/50 border-b border-slate-700/50">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold text-xs border border-slate-600 overflow-hidden flex-shrink-0 bg-slate-800">
-                    {userAvatar ? (
-                      <img src={userAvatar} alt="Avatar" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className={`w-full h-full ${getAvatarColor(userEmail)} flex items-center justify-center text-xs`}>
-                        {getInitials(userName || userEmail)}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-white truncate">{userName || userEmail.split('@')[0]}</p>
-                    <p className="text-[10px] text-slate-400 truncate">{userEmail}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Menu Items */}
-              <div className="p-1 space-y-0.5">
-                {onShowSettings && (
-                  <button
-                    onClick={() => {
-                      setShowMenu(false);
-                      onShowSettings();
-                      // Removed auto-close: sidebar stays open
-                    }}
-                    className="w-full flex items-center gap-2 px-2 py-2 text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-lg transition-all group"
-                  >
-                    <i className="fa-solid fa-clock-rotate-left text-xs w-4 text-slate-400 group-hover:text-cyan-400"></i>
-                    <span className="font-medium">Lịch sử</span>
-                  </button>
-                )}
-
-                <div className="h-px bg-slate-700/30 my-1"></div>
-
-                {/* Logout */}
-                <button
-                  onClick={() => {
-                    setShowMenu(false);
-                    onLogout?.();
-                    // Removed auto-close: sidebar stays open
-                  }}
-                  className="w-full flex items-center gap-2 px-2 py-2 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all group"
-                >
-                  <i className="fa-solid fa-right-from-bracket text-xs w-4"></i>
-                  <span className="font-medium">Đăng xuất</span>
-                </button>
-              </div>
+          ) : (
+            getInitials(userName || userEmail)
+          )}
+        </div>
+        {!collapsed && (
+          <>
+            <div className="flex-1 min-w-0 text-left">
+              <p className="text-[11px] font-semibold text-slate-200 truncate leading-tight">
+                {userName || userEmail.split("@")[0]}
+              </p>
+              <p className="text-[10px] text-slate-500 truncate">{userEmail}</p>
             </div>
+            <i
+              className={`fa-solid fa-ellipsis text-slate-600 group-hover:text-slate-400 text-[10px] flex-shrink-0 ${showMenu ? "text-slate-400" : ""}`}
+            />
           </>
         )}
-      </div>
+      </button>
+
+      {showMenu && (
+        <div
+          className={`absolute bottom-full mb-2 bg-slate-900 border border-white/8 rounded-xl shadow-2xl shadow-black/50 overflow-hidden z-50 ${collapsed ? "left-full ml-2 w-48" : "left-3 right-3"}`}
+        >
+          <label className="flex items-center gap-2.5 px-3 py-2.5 hover:bg-slate-800/60 cursor-pointer transition-colors">
+            <i className="fa-solid fa-camera text-[11px] text-slate-400 w-4 text-center" />
+            <span className="text-[11px] text-slate-300 font-medium">
+              Đổi ảnh đại diện
+            </span>
+            <input
+              type="file"
+              className="hidden"
+              accept=".jpg,.jpeg,.png"
+              onChange={handleAvatarUpload}
+            />
+          </label>
+          {onShowSettings && (
+            <button
+              onClick={() => {
+                setShowMenu(false);
+                onShowSettings();
+              }}
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-slate-800/60 transition-colors"
+            >
+              <i className="fa-solid fa-clock-rotate-left text-[11px] text-slate-400 w-4 text-center" />
+              <span className="text-[11px] text-slate-300 font-medium">
+                Lịch sử
+              </span>
+            </button>
+          )}
+          <div className="h-px bg-white/5 mx-2" />
+          <button
+            onClick={() => {
+              setShowMenu(false);
+              onLogout?.();
+            }}
+            className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-red-500/10 transition-colors"
+          >
+            <i className="fa-solid fa-right-from-bracket text-[11px] text-red-400 w-4 text-center" />
+            <span className="text-[11px] text-red-400 font-medium">
+              Đăng xuất
+            </span>
+          </button>
+        </div>
+      )}
     </div>
+  );
+};
+
+// ─── Main Sidebar ──────────────────────────────────────────────────────────
+const Sidebar: React.FC<SidebarProps> = ({
+  activeStep,
+  setActiveStep,
+  completedSteps,
+  onReset,
+  onLogout,
+  userEmail,
+  onLoginRequest,
+  isOpen = false,
+  onClose,
+  onShowSettings,
+  onCollapsedChange,
+}) => {
+  const [collapsed, setCollapsed] = useState(false);
+
+  const toggleCollapsed = () => {
+    const next = !collapsed;
+    setCollapsed(next);
+    onCollapsedChange?.(next);
+  };
+
+  const isStepEnabled = (step: AppStep): boolean => {
+    if (step === "home" || step === "jd") return true;
+    if (step === "weights") return completedSteps.includes("jd");
+    if (step === "upload")
+      return (
+        completedSteps.includes("jd") && completedSteps.includes("weights")
+      );
+    if (step === "analysis")
+      return (
+        completedSteps.includes("jd") &&
+        completedSteps.includes("weights") &&
+        completedSteps.includes("upload")
+      );
+    return false;
+  };
+
+  const canReset = completedSteps.includes("upload");
+
+  const handleStepClick = (step: AppStep) => {
+    if (!isStepEnabled(step)) return;
+    setActiveStep(step);
+    onClose?.(); // close mobile drawer on nav
+  };
+
+  return (
+    <>
+      {/* ── Mobile overlay ──────────────────────────────────────────────── */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm"
+          onClick={onClose}
+        />
+      )}
+
+      {/* ── Sidebar panel ───────────────────────────────────────────────── */}
+      <aside
+        className={`
+          flex flex-col fixed top-0 left-0 h-screen z-50
+          bg-slate-950 border-r border-white/5
+          shadow-[4px_0_24px_rgba(0,0,0,0.4)]
+          transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+          ${collapsed ? "md:w-[72px]" : "md:w-64"}
+          w-64
+          ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+        `}
+      >
+        {/* ── Brand + collapse toggle ──────────────────────────────────── */}
+        <div
+          className={`flex items-center h-14 border-b border-white/5 flex-shrink-0 ${collapsed ? "px-0 justify-center" : "px-4 gap-3"}`}
+        >
+          {collapsed ? (
+            <button
+              onClick={toggleCollapsed}
+              className="w-9 h-9 rounded-lg overflow-hidden border border-white/10 flex-shrink-0 hover:border-cyan-500/40 transition-colors"
+              title="Mở rộng sidebar"
+            >
+              <img
+                src="/images/logos/logo.jpg"
+                alt="Support HR"
+                className="w-full h-full object-contain"
+              />
+            </button>
+          ) : (
+            <>
+              <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 border border-white/10 shadow-lg">
+                <img
+                  src="/images/logos/logo.jpg"
+                  alt="Support HR"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-bold text-white leading-tight">
+                  Support HR
+                </p>
+                <p className="text-[9px] text-slate-500 uppercase tracking-widest font-medium">
+                  AI Recruitment
+                </p>
+              </div>
+              {/* Collapse button — desktop only */}
+              <button
+                onClick={toggleCollapsed}
+                className="hidden md:flex w-6 h-6 rounded-md items-center justify-center text-slate-600 hover:text-slate-300 hover:bg-slate-800 transition-colors flex-shrink-0"
+                title="Thu gọn sidebar"
+              >
+                <i className="fa-solid fa-chevron-left text-[10px]" />
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* ── New campaign button ──────────────────────────────────────── */}
+        <div
+          className={`pt-3 pb-1 flex-shrink-0 ${collapsed ? "px-2" : "px-3"}`}
+        >
+          <button
+            onClick={() => {
+              if (canReset) onReset();
+            }}
+            disabled={!canReset}
+            title={collapsed ? "Chiến Dịch Mới" : undefined}
+            className={`
+              w-full h-9 rounded-xl flex items-center justify-center gap-2
+              text-[12px] font-bold transition-all
+              ${
+                canReset
+                  ? "bg-gradient-to-r from-cyan-600 to-indigo-600 hover:brightness-110 text-white shadow-lg shadow-cyan-900/20"
+                  : "bg-slate-900 border border-slate-800 text-slate-600 cursor-not-allowed"
+              }
+            `}
+          >
+            <i className="fa-solid fa-plus text-xs" />
+            {!collapsed && <span>Chiến Dịch Mới</span>}
+          </button>
+        </div>
+
+        {/* ── Section label ────────────────────────────────────────────── */}
+        {!collapsed && (
+          <div className="px-4 pt-4 pb-1.5 flex-shrink-0">
+            <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">
+              Các bước
+            </p>
+          </div>
+        )}
+        {collapsed && <div className="pt-3" />}
+
+        {/* ── Nav steps ────────────────────────────────────────────────── */}
+        <nav
+          className={`flex-1 overflow-y-auto custom-scrollbar pb-2 space-y-0.5 ${collapsed ? "px-2" : "px-2"}`}
+        >
+          {STEPS.map((step) => {
+            const isActive = activeStep === step.key;
+            const isEnabled = isStepEnabled(step.key);
+            const isCompleted = completedSteps.includes(step.key);
+            const Icon = step.icon;
+
+            return (
+              <button
+                key={step.key}
+                disabled={!isEnabled}
+                onClick={() => handleStepClick(step.key)}
+                title={collapsed ? `${step.label} — ${step.desc}` : undefined}
+                className={`
+                  relative w-full flex items-center rounded-xl
+                  text-left transition-all duration-150 group
+                  ${collapsed ? "justify-center px-0 py-2.5" : "gap-3 px-3 py-2.5"}
+                  ${
+                    isActive
+                      ? "bg-slate-800/80 text-white"
+                      : isEnabled
+                        ? "text-slate-400 hover:bg-slate-800/40 hover:text-slate-200"
+                        : "text-slate-700 cursor-not-allowed opacity-50"
+                  }
+                `}
+              >
+                {/* Active accent bar */}
+                {isActive && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-r bg-gradient-to-b from-cyan-400 to-indigo-400" />
+                )}
+
+                {/* Icon */}
+                <div
+                  className={`
+                  relative w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0
+                  border transition-all duration-150
+                  ${
+                    isActive
+                      ? "bg-gradient-to-br from-cyan-500/20 to-indigo-500/20 border-cyan-500/30"
+                      : isCompleted
+                        ? "bg-emerald-500/10 border-emerald-500/20"
+                        : "bg-slate-800/60 border-slate-700/60 group-hover:border-slate-600"
+                  }
+                `}
+                >
+                  <Icon
+                    className={`w-[15px] h-[15px] ${
+                      isActive
+                        ? "text-cyan-400"
+                        : isCompleted
+                          ? "text-emerald-400"
+                          : "text-slate-500 group-hover:text-slate-300"
+                    }`}
+                  />
+                  {isCompleted && !isActive && (
+                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full border border-slate-950 shadow" />
+                  )}
+                </div>
+
+                {/* Label — hidden when collapsed */}
+                {!collapsed && (
+                  <div className="flex-1 min-w-0">
+                    <p
+                      className={`text-[12px] font-semibold leading-tight truncate ${
+                        isActive
+                          ? "text-white"
+                          : isEnabled
+                            ? "text-slate-300"
+                            : "text-slate-600"
+                      }`}
+                    >
+                      {step.label}
+                    </p>
+                    <p
+                      className={`text-[10px] mt-0.5 ${isActive ? "text-slate-400" : "text-slate-600"}`}
+                    >
+                      {step.desc}
+                    </p>
+                  </div>
+                )}
+
+                {isActive && !collapsed && (
+                  <i className="fa-solid fa-chevron-right text-[9px] text-slate-500 flex-shrink-0" />
+                )}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* ── User profile ─────────────────────────────────────────────── */}
+        <UserProfile
+          userEmail={userEmail}
+          collapsed={collapsed}
+          onLogout={onLogout}
+          onLoginRequest={onLoginRequest}
+          onShowSettings={onShowSettings}
+        />
+      </aside>
+    </>
   );
 };
 

@@ -1,14 +1,18 @@
-
-import React, { Suspense, lazy } from 'react';
-import type { AppStep, Candidate, HardFilters, WeightCriteria } from '../../../types';
-import JDInput from '../../modules/JDInput';
+import React, { Suspense, lazy } from "react";
+import type {
+  AppStep,
+  Candidate,
+  HardFilters,
+  WeightCriteria,
+} from "../../../types";
+import JDInput from "../../modules/JDInput";
 
 // Lazy load heavy components
-const WeightsConfig = lazy(() => import('../../modules/WeightsConfig'));
-const CVUpload = lazy(() => import('../../modules/CVUpload'));
-const AnalysisResults = lazy(() => import('../../modules/AnalysisResults'));
+const WeightsConfig = lazy(() => import("../../modules/WeightsConfig"));
+const CVUpload = lazy(() => import("../../modules/CVUpload"));
+const AnalysisResults = lazy(() => import("../../modules/AnalysisResults"));
 
-import Loader from '../../ui/Loader';
+import Loader from "../../ui/Loader";
 
 // Loading component
 const ModuleLoader = () => (
@@ -16,7 +20,6 @@ const ModuleLoader = () => (
     <Loader message="Đang tải dữ liệu..." />
   </div>
 );
-
 
 interface ScreenerPageProps {
   jdText: string;
@@ -55,7 +58,7 @@ const ScreenerPage: React.FC<ScreenerPageProps> = (props) => {
 
   return (
     <>
-      <div className={activeStep === 'jd' ? 'block' : 'hidden'}>
+      <div className={activeStep === "jd" ? "block h-screen" : "hidden"}>
         <JDInput
           jdText={props.jdText}
           setJdText={props.setJdText}
@@ -73,12 +76,12 @@ const ScreenerPage: React.FC<ScreenerPageProps> = (props) => {
           uid={props.uid}
           setWeights={props.setWeights}
           onComplete={() => {
-            props.markStepAsCompleted('jd');
-            props.setActiveStep('weights');
+            props.markStepAsCompleted("jd");
+            props.setActiveStep("weights");
           }}
         />
       </div>
-      <div className={activeStep === 'weights' ? 'block' : 'hidden'}>
+      <div className={activeStep === "weights" ? "block h-screen" : "hidden"}>
         <Suspense fallback={<ModuleLoader />}>
           <WeightsConfig
             weights={props.weights}
@@ -87,13 +90,13 @@ const ScreenerPage: React.FC<ScreenerPageProps> = (props) => {
             setHardFilters={props.setHardFilters}
             sidebarCollapsed={props.sidebarCollapsed}
             onComplete={() => {
-              props.markStepAsCompleted('weights');
-              props.setActiveStep('upload');
+              props.markStepAsCompleted("weights");
+              props.setActiveStep("upload");
             }}
           />
         </Suspense>
       </div>
-      <div className={activeStep === 'upload' ? 'block' : 'hidden'}>
+      <div className={activeStep === "upload" ? "block h-screen" : "hidden"}>
         <Suspense fallback={<ModuleLoader />}>
           <CVUpload
             cvFiles={props.cvFiles}
@@ -106,15 +109,15 @@ const ScreenerPage: React.FC<ScreenerPageProps> = (props) => {
             setIsLoading={props.setIsLoading}
             setLoadingMessage={props.setLoadingMessage}
             onAnalysisStart={() => {
-              props.markStepAsCompleted('upload');
-              props.setActiveStep('analysis');
+              props.markStepAsCompleted("upload");
+              props.setActiveStep("analysis");
             }}
             completedSteps={props.completedSteps}
             sidebarCollapsed={props.sidebarCollapsed}
           />
         </Suspense>
       </div>
-      <div className={activeStep === 'analysis' ? 'block' : 'hidden'}>
+      <div className={activeStep === "analysis" ? "block h-screen" : "hidden"}>
         <Suspense fallback={<ModuleLoader />}>
           <AnalysisResults
             isLoading={props.isLoading}

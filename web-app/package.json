@@ -33,6 +33,7 @@
     "web-vitals": "^5.1.0"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.2.1",
     "@types/node": "^22.14.0",
     "autoprefixer": "^10.4.22",
     "dotenv": "^16.4.5",

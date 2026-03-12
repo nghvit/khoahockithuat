@@ -1,14 +1,12 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import debounce from 'lodash.debounce';
-import type { Candidate, DetailedScore, AppStep } from '../../../types';
-import ExpandedContent from '../ExpandedContent';
-import ChatbotPanel from '../ChatbotPanel';
-import InterviewQuestionGenerator from '../InterviewQuestionGenerator';
-import ProgressBar from '../../ui/ProgressBar';
-import Loader from '../../ui/Loader';
-// Removed manual history save functionality
-
+import React, { useState, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import debounce from "lodash.debounce";
+import type { Candidate, AppStep } from "../../../types";
+import ExpandedContent from "../ExpandedContent";
+import ChatbotPanel from "../ChatbotPanel";
+import InterviewQuestionGenerator from "../InterviewQuestionGenerator";
+import ProgressBar from "../../ui/ProgressBar";
+import Loader from "../../ui/Loader";
 
 interface AnalysisResultsProps {
   isLoading: boolean;
@@ -24,597 +22,719 @@ interface AnalysisResultsProps {
   sidebarCollapsed?: boolean;
 }
 
-// --- Sub-components for Redesigned UI ---
+type RankedCandidate = Candidate & { rank: number; jdFit: number };
 
-const CampaignHeader: React.FC<{
-  position: string;
-  total: number;
-  countA: number;
-  countB: number;
-  countC: number;
-  onQuestionsClick: () => void;
-  onStatsClick: () => void;
-}> = ({ position, total, countA, countB, countC, onQuestionsClick, onStatsClick }) => (
-  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between bg-[#111827] p-5 rounded-2xl border border-[#1F2937] shadow-lg">
-    <div className="min-w-0">
-      <h2 className="text-xl font-bold text-white truncate">{position}</h2>
-      <div className="flex items-center gap-3 mt-1 text-xs text-slate-400">
-        <span>CV: <span className="text-white font-semibold">{total}</span></span>
-        <span className="w-1 h-1 bg-slate-700 rounded-full"></span>
-        <span>A: <span className="text-emerald-400 font-semibold">{countA}</span></span>
-        <span className="w-1 h-1 bg-slate-700 rounded-full"></span>
-        <span>B: <span className="text-blue-400 font-semibold">{countB}</span></span>
-        <span className="w-1 h-1 bg-slate-700 rounded-full"></span>
-        <span>C: <span className="text-rose-400 font-semibold">{countC}</span></span>
-      </div>
-    </div>
-    <div className="flex gap-2 shrink-0">
-      <button
-        onClick={onQuestionsClick}
-        className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-sm font-semibold rounded-xl transition-all shadow-lg shadow-blue-900/20"
-      >
-        Gợi ý câu hỏi PV
-      </button>
-      <button
-        onClick={onStatsClick}
-        className="px-4 py-2 bg-[#1F2937] hover:bg-slate-700 text-slate-200 text-sm font-semibold rounded-xl border border-slate-700 transition-all"
-      >
-        Thống kê chi tiết
-      </button>
-    </div>
-  </div>
-);
-
-const FilterBar: React.FC<{
-  searchTerm: string;
-  onSearchChange: (val: string) => void;
-  filter: string;
-  onFilterChange: (val: string) => void;
-  sortBy: string;
-  onSortChange: (val: 'score' | 'jdFit') => void;
-}> = ({ searchTerm, onSearchChange, filter, onFilterChange, sortBy, onSortChange }) => (
-  <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-[#0B1220] py-4">
-    <div className="relative w-full md:max-w-xs">
-      <i className="fa-solid fa-magnifying-glass text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 text-sm"></i>
-      <input
-        type="text"
-        placeholder="Search candidate..."
-        value={searchTerm}
-        onChange={(e) => onSearchChange(e.target.value)}
-        className="w-full bg-[#111827] border border-[#1F2937] rounded-xl pl-10 pr-4 py-2 text-sm text-white placeholder:text-slate-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-      />
-    </div>
-    <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 w-full md:w-auto no-scrollbar">
-      {[
-        { label: 'All', value: 'all' },
-        { label: 'A', value: 'A' },
-        { label: 'B', value: 'B' },
-        { label: 'C', value: 'C' },
-        { label: 'Error', value: 'FAILED' }
-      ].map((btn) => (
-        <button
-          key={btn.value}
-          onClick={() => onFilterChange(btn.value)}
-          className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all border ${filter === btn.value
-            ? 'bg-blue-500/10 border-blue-500/50 text-blue-400'
-            : 'bg-[#111827] border-[#1F2937] text-slate-400 hover:border-slate-600'
-            }`}
-        >
-          {btn.label}
-        </button>
-      ))}
-    </div>
-    <div className="flex items-center gap-2 shrink-0">
-      <span className="text-xs text-slate-500">Sort by:</span>
-      <select
-        value={sortBy}
-        onChange={(e) => onSortChange(e.target.value as 'score' | 'jdFit')}
-        className="bg-[#111827] border border-[#1F2937] text-slate-200 text-sm rounded-xl px-3 py-1.5 focus:border-blue-500 outline-none cursor-pointer hover:bg-slate-800"
-      >
-        <option value="score">Score ▼</option>
-        <option value="jdFit">JD Fit ▼</option>
-      </select>
-    </div>
-  </div>
-);
-
-type RankedCandidate = Candidate & { rank: number; jdFitScore: number; gradeValue: number };
-
-
-const CandidateRow: React.FC<{
-  candidate: RankedCandidate;
-  isSelected: boolean;
-  onSelect: () => void;
-  onDetail: () => void;
-}> = ({ candidate, isSelected, onSelect, onDetail }) => {
-  const grade = candidate.status === 'FAILED' ? 'FAILED' : (candidate.analysis?.['Hạng'] || 'C');
-  const overallScore = candidate.status === 'FAILED' ? 0 : (candidate.analysis?.['Tổng điểm'] || 0);
-  const jdFitScore = candidate.status === 'FAILED' ? 0 : parseInt(candidate.analysis?.['Chi tiết']?.find(i => i['Tiêu chí'].startsWith('Phù hợp JD'))?.['Điểm'].split('/')[0] || '0', 10);
-
-  return (
-    <tr className={`border-b border-[#1F2937] hover:bg-[#1F2937]/50 transition-colors group cursor-pointer`} onClick={onDetail}>
-      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-        <input
-          type="checkbox"
-          checked={isSelected}
-          onChange={onSelect}
-          className="rounded border-[#1F2937] bg-[#0B1220] text-blue-500 focus:ring-blue-500 w-4 h-4 cursor-pointer"
-        />
-      </td>
-      <td className="px-4 py-3 text-sm font-medium text-slate-200">{candidate.candidateName || 'Chưa xác định'}</td>
-      <td className="px-4 py-3">
-        <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${grade === 'A' ? 'bg-emerald-500/10 text-emerald-400' :
-          grade === 'B' ? 'bg-blue-500/10 text-blue-400' :
-            grade === 'C' ? 'bg-amber-500/10 text-amber-400' :
-              'bg-red-500/10 text-red-400'
-          }`}>
-          {grade}
-        </span>
-      </td>
-      <td className="px-4 py-3 text-sm font-semibold text-white">{overallScore}</td>
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-slate-300">{jdFitScore}%</span>
-          <div className="w-12 h-1 bg-slate-800 rounded-full overflow-hidden hidden sm:block">
-            <div
-              className={`h-full ${jdFitScore >= 70 ? 'bg-emerald-500' : jdFitScore >= 40 ? 'bg-amber-500' : 'bg-red-500'}`}
-              style={{ width: `${jdFitScore}%` }}
-            />
-          </div>
-        </div>
-      </td>
-      <td className="px-4 py-3 text-xs text-slate-500 truncate max-w-[120px]">{candidate.fileName}</td>
-      <td className="px-4 py-3 text-right">
-        <button
-          onClick={(e) => { e.stopPropagation(); onDetail(); }}
-          className="text-blue-500 hover:text-blue-400 text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity"
-        >
-          Chi tiết
-        </button>
-      </td>
-    </tr>
-  );
-};
-
-const CandidateTable: React.FC<{
-  candidates: RankedCandidate[];
-  selectedIds: Set<string>;
-  onSelectAll: () => void;
-  onSelectOne: (id: string, index: number) => void;
-  onDetail: (candidate: RankedCandidate) => void;
-}> = ({ candidates, selectedIds, onSelectAll, onSelectOne, onDetail }) => (
-  <div className="bg-[#111827] rounded-2xl border border-[#1F2937] shadow-xl overflow-hidden">
-    <div className="overflow-x-auto overflow-y-auto max-h-[60vh] custom-scrollbar">
-      <table className="w-full text-left border-collapse">
-        <thead className="sticky top-0 bg-[#111827] z-10 border-b border-[#1F2937]">
-          <tr className="text-slate-500 text-[11px] uppercase tracking-wider">
-            <th className="px-4 py-3 w-10">
-              <input
-                type="checkbox"
-                checked={candidates.length > 0 && selectedIds.size === candidates.length}
-                onChange={onSelectAll}
-                className="rounded border-[#1F2937] bg-[#0B1220] text-blue-500 focus:ring-blue-500 w-4 h-4 cursor-pointer"
-              />
-            </th>
-            <th className="px-4 py-3 font-semibold">Họ tên</th>
-            <th className="px-4 py-3 font-semibold">Hạng</th>
-            <th className="px-4 py-3 font-semibold">Điểm</th>
-            <th className="px-4 py-3 font-semibold">Phù hợp JD</th>
-            <th className="px-4 py-3 font-semibold">File</th>
-            <th className="px-4 py-3 font-semibold text-right text-transparent">Action</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-[#1F2937]/50">
-          {candidates.map((c, idx) => (
-            <CandidateRow
-              key={c.id}
-              candidate={c}
-              isSelected={selectedIds.has(c.id)}
-              onSelect={() => onSelectOne(c.id, idx)}
-              onDetail={() => onDetail(c)}
-            />
-          ))}
-          {candidates.length === 0 && (
-            <tr><td colSpan={7} className="px-4 py-12 text-center text-slate-500 italic">No candidates found matching your criteria.</td></tr>
-          )}
-        </tbody>
-      </table>
-    </div>
-  </div>
-);
-
-
-const CandidateDetailModal: React.FC<{
-  candidate: RankedCandidate | null;
-  onClose: () => void;
-  jdText: string;
-}> = ({ candidate, onClose, jdText }) => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [expandedCriteria, setExpandedCriteria] = useState<Record<string, Record<string, boolean>>>({});
-
-  if (!candidate) return null;
-
-  const overallScore = candidate.status === 'FAILED' ? 0 : (candidate.analysis?.['Tổng điểm'] || 0);
-  const jdFitScore = candidate.status === 'FAILED' ? 0 : parseInt(candidate.analysis?.['Chi tiết']?.find(i => i['Tiêu chí'].startsWith('Phù hợp JD'))?.['Điểm'].split('/')[0] || '0', 10);
-  const grade = candidate.status === 'FAILED' ? 'FAILED' : (candidate.analysis?.['Hạng'] || 'C');
-
-  const goToNext = () => setCurrentPage(2);
-  const goToBack = () => setCurrentPage(1);
-
-  const handleToggleCriterion = (candidateId: string, criterion: string) => {
-    setExpandedCriteria(prev => {
-      const candidateExpanded = prev[candidateId] || {};
-      return {
-        ...prev,
-        [candidateId]: {
-          ...candidateExpanded,
-          [criterion]: !candidateExpanded[criterion]
-        }
-      };
-    });
+const GRADE_STYLE: Record<string, { badge: string; bar: string; dot: string }> =
+  {
+    A: {
+      badge: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+      bar: "from-emerald-500 to-teal-400",
+      dot: "bg-emerald-400",
+    },
+    B: {
+      badge: "bg-blue-500/15    text-blue-400    border-blue-500/30",
+      bar: "from-blue-500 to-indigo-400",
+      dot: "bg-blue-400",
+    },
+    C: {
+      badge: "bg-amber-500/15   text-amber-400   border-amber-500/30",
+      bar: "from-amber-500 to-orange-400",
+      dot: "bg-amber-400",
+    },
+    FAILED: {
+      badge: "bg-red-500/15     text-red-400     border-red-500/30",
+      bar: "from-red-500 to-rose-400",
+      dot: "bg-red-400",
+    },
   };
 
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-[#0B1220]/80 backdrop-blur-md animate-in fade-in duration-300"
-        onClick={onClose}
-      ></div>
+const getGrade = (c: Candidate) =>
+  c.status === "FAILED" ? "FAILED" : c.analysis?.["Hạng"] || "C";
+const getScore = (c: Candidate) =>
+  c.status === "FAILED" ? 0 : c.analysis?.["Tổng điểm"] || 0;
+const getJdFit = (c: Candidate) =>
+  c.status === "FAILED"
+    ? 0
+    : parseInt(
+        c.analysis?.["Chi tiết"]
+          ?.find((i) => i["Tiêu chí"]?.startsWith("Phù hợp JD"))
+          ?.["Điểm"]?.split("/")[0] || "0",
+        10,
+      );
 
-      {/* Modal Content */}
-      <div className="relative w-full max-w-5xl h-[85vh] bg-[#111827] border border-[#1F2937] rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-[#1F2937] shrink-0">
-          <div>
-            <h2 className="text-2xl font-bold text-white">Candidate Analysis</h2>
-            <p className="text-slate-400 text-sm mt-1">{candidate.candidateName}</p>
+const AnalysisResults: React.FC<AnalysisResultsProps> = ({
+  isLoading,
+  loadingMessage,
+  results,
+  jobPosition,
+  locationRequirement,
+  jdText,
+  setActiveStep,
+  markStepAsCompleted,
+  activeStep = "analysis",
+  completedSteps = [],
+  sidebarCollapsed = false,
+}) => {
+  const navigate = useNavigate();
+  const [filter, setFilter] = useState("all");
+  const [sortBy, setSortBy] = useState<"score" | "jdFit">("score");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [detailCandidate, setDetailCandidate] =
+    useState<RankedCandidate | null>(null);
+  const [detailPage, setDetailPage] = useState(1);
+  const [expandedCriteria, setExpandedCriteria] = useState<
+    Record<string, Record<string, boolean>>
+  >({});
+  const [showChatbot, setShowChatbot] = useState(false);
+  const [showInterviewQ, setShowInterviewQ] = useState(false);
+
+  const sidebarW = sidebarCollapsed ? "md:left-[72px]" : "md:left-64";
+
+  const debouncedSetSearch = useCallback(
+    debounce((v: string) => setDebouncedSearch(v), 300),
+    [],
+  );
+  const handleSearch = (v: string) => {
+    setSearchTerm(v);
+    debouncedSetSearch(v);
+  };
+
+  const summary = useMemo(() => {
+    if (!results?.length)
+      return { total: 0, A: 0, B: 0, C: 0, FAILED: 0, avgScore: 0 };
+    const ok = results.filter((c) => c.status === "SUCCESS" && c.analysis);
+    const scores = ok.map(getScore).filter(Boolean);
+    return {
+      total: results.length,
+      A: ok.filter((c) => c.analysis?.["Hạng"] === "A").length,
+      B: ok.filter((c) => c.analysis?.["Hạng"] === "B").length,
+      C: ok.filter((c) => c.analysis?.["Hạng"] === "C").length,
+      FAILED: results.filter((c) => c.status === "FAILED").length,
+      avgScore: scores.length
+        ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+        : 0,
+    };
+  }, [results]);
+
+  const ranked = useMemo((): RankedCandidate[] => {
+    if (!results?.length) return [];
+    return results
+      .map((c) => ({
+        ...c,
+        id: c.id || `c-${Math.random()}`,
+        jdFit: getJdFit(c),
+      }))
+      .sort((a, b) => {
+        const va = sortBy === "score" ? getScore(a) : a.jdFit;
+        const vb = sortBy === "score" ? getScore(b) : b.jdFit;
+        return vb - va;
+      })
+      .map((c, i) => ({ ...c, rank: i + 1 }));
+  }, [results, sortBy]);
+
+  const filtered = useMemo(
+    () =>
+      ranked.filter((c) => {
+        const matchSearch =
+          !debouncedSearch ||
+          c.candidateName
+            ?.toLowerCase()
+            .includes(debouncedSearch.toLowerCase());
+        const matchFilter =
+          filter === "all" ||
+          (c.status === "FAILED"
+            ? filter === "FAILED"
+            : c.analysis?.["Hạng"] === filter);
+        return matchSearch && matchFilter;
+      }),
+    [ranked, debouncedSearch, filter],
+  );
+
+  const analysisData = useMemo(
+    () =>
+      results?.length
+        ? {
+            timestamp: Date.now(),
+            job: {
+              position: jobPosition,
+              locationRequirement: locationRequirement || "N/A",
+            },
+            candidates: results,
+          }
+        : null,
+    [results, jobPosition, locationRequirement],
+  );
+
+  const toggleSelect = (id: string) =>
+    setSelectedIds((prev) => {
+      const n = new Set(prev);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+  const toggleAll = () =>
+    selectedIds.size === filtered.length
+      ? setSelectedIds(new Set())
+      : setSelectedIds(new Set(filtered.map((c) => c.id)));
+
+  const exportCSV = () => {
+    const rows = filtered
+      .filter((c) => selectedIds.has(c.id))
+      .map((c, i) =>
+        [
+          i + 1,
+          c.candidateName || "",
+          getGrade(c),
+          getScore(c),
+          c.jdFit,
+          c.jobTitle || "",
+          c.fileName || "",
+        ]
+          .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+          .join(","),
+      );
+    const blob = new Blob(
+      [
+        "\uFEFF" +
+          ["STT,HoTen,Hang,DiemTong,JDFit,ChucDanh,File", ...rows].join("\n"),
+      ],
+      { type: "text/csv;charset=utf-8;" },
+    );
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `candidates_${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+  };
+
+  if (isLoading)
+    return (
+      <section className="w-full h-screen bg-background flex items-center justify-center">
+        <Loader message={loadingMessage} />
+      </section>
+    );
+  if (!results?.length)
+    return (
+      <section className="w-full h-screen bg-background flex flex-col items-center justify-center text-center p-6">
+        <div className="w-16 h-16 bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-center mb-4 text-slate-600">
+          <i className="fa-solid fa-chart-line text-2xl" />
+        </div>
+        <h3 className="text-base font-bold text-white mb-1">
+          Sẵn sàng phân tích
+        </h3>
+        <p className="text-[12px] text-slate-500 max-w-xs">
+          Kết quả sẽ hiển thị sau khi bạn tải CV và cung cấp JD.
+        </p>
+      </section>
+    );
+
+  return (
+    <section
+      id="module-analysis"
+      className="w-full h-screen flex flex-col bg-background"
+    >
+      {/* ═══ HEADER ═══ */}
+      <div
+        className={`fixed top-14 md:top-0 left-0 right-0 z-30 ${sidebarW} transition-all duration-300`}
+      >
+        <div className="bg-background/95 backdrop-blur-sm border-b border-white/5">
+          <div className="h-14 flex items-center px-5 gap-3">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
+              <i className="fa-solid fa-chart-bar text-white text-xs" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-white truncate leading-none">
+                {jobPosition || "Kết quả phân tích"}
+              </p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-[10px] text-slate-500">Bước 4/4</span>
+                <span className="text-[10px] font-bold text-emerald-400">
+                  {summary.A}A
+                </span>
+                <span className="text-[10px] font-bold text-blue-400">
+                  {summary.B}B
+                </span>
+                <span className="text-[10px] font-bold text-amber-400">
+                  {summary.C}C
+                </span>
+                {summary.FAILED > 0 && (
+                  <span className="text-[10px] font-bold text-red-400">
+                    {summary.FAILED}✗
+                  </span>
+                )}
+              </div>
+            </div>
+            {selectedIds.size > 0 ? (
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <span className="text-[10px] text-slate-400 hidden sm:block">
+                  {selectedIds.size} đã chọn
+                </span>
+                <button
+                  onClick={exportCSV}
+                  className="h-7 px-3 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold rounded-lg transition-all flex items-center gap-1.5"
+                >
+                  <i className="fa-solid fa-download text-xs" /> Xuất CSV
+                </button>
+                <button
+                  onClick={() => setSelectedIds(new Set())}
+                  className="h-7 px-2 bg-slate-800 text-slate-400 text-[10px] font-bold rounded-lg border border-slate-700 transition-all"
+                >
+                  Bỏ chọn
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <button
+                  onClick={() => setShowInterviewQ(true)}
+                  className="h-7 px-3 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold rounded-lg transition-all flex items-center gap-1.5"
+                >
+                  <i className="fa-solid fa-microphone-lines text-xs" />
+                  <span className="hidden sm:inline">Câu hỏi PV</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveStep?.("dashboard");
+                    markStepAsCompleted?.("analysis");
+                    navigate("/detailed-analytics");
+                  }}
+                  className="h-7 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold rounded-lg border border-slate-700 transition-all flex items-center gap-1.5"
+                >
+                  <i className="fa-solid fa-chart-line text-xs" />
+                  <span className="hidden sm:inline">Thống kê</span>
+                </button>
+              </div>
+            )}
           </div>
-          <button
-            onClick={onClose}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-[#1F2937] text-slate-400 hover:text-white hover:bg-slate-700 transition-all"
-          >
-            <i className="fa-solid fa-xmark text-lg"></i>
-          </button>
+          <div className="px-5 pb-2">
+            <ProgressBar
+              activeStep={activeStep}
+              completedSteps={completedSteps}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* ═══ BODY — 2 COLUMN ═══ */}
+      <div className="flex-1 flex min-h-0 pt-[calc(56px+40px)] md:pt-[calc(56px+40px)] overflow-hidden">
+        {/* LEFT: Table */}
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          {/* Filter bar */}
+          <div className="px-5 py-3 border-b border-white/5 flex-shrink-0 flex flex-col sm:flex-row gap-2 items-start sm:items-center bg-background">
+            <div className="relative flex-shrink-0">
+              <i className="fa-solid fa-magnifying-glass text-slate-600 absolute left-3 top-1/2 -translate-y-1/2 text-xs" />
+              <input
+                type="text"
+                placeholder="Tìm ứng viên..."
+                value={searchTerm}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="h-8 w-52 bg-slate-900 border border-slate-800 rounded-lg pl-8 pr-3 text-[12px] text-white placeholder-slate-600 focus:border-indigo-500/30 outline-none transition-all"
+              />
+            </div>
+            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar flex-1">
+              {[
+                ["all", "Tất cả"],
+                ["A", "★ A"],
+                ["B", "★ B"],
+                ["C", "★ C"],
+                ["FAILED", "Lỗi"],
+              ].map(([v, l]) => (
+                <button
+                  key={v}
+                  onClick={() => setFilter(v)}
+                  className={`h-7 px-3 rounded-lg text-[11px] font-semibold transition-all border whitespace-nowrap flex-shrink-0 ${filter === v ? "bg-indigo-500/15 border-indigo-500/30 text-indigo-400" : "bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-300"}`}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as "score" | "jdFit")}
+              className="h-8 bg-slate-900 border border-slate-800 text-slate-400 text-[11px] rounded-lg px-2.5 outline-none cursor-pointer flex-shrink-0"
+            >
+              <option value="score">Điểm ↓</option>
+              <option value="jdFit">JD Fit ↓</option>
+            </select>
+          </div>
+
+          {/* Table */}
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
+            <table className="w-full text-left">
+              <thead className="sticky top-0 bg-card/80 border-b border-white/5 z-10">
+                <tr className="text-slate-600 text-[10px] uppercase tracking-wider font-bold">
+                  <th className="px-4 py-3 w-8">
+                    <input
+                      type="checkbox"
+                      checked={
+                        filtered.length > 0 &&
+                        selectedIds.size === filtered.length
+                      }
+                      onChange={toggleAll}
+                      className="rounded border-slate-700 bg-slate-900 text-indigo-500 w-3.5 h-3.5 cursor-pointer"
+                    />
+                  </th>
+                  <th className="px-2 py-3 w-8">#</th>
+                  <th className="px-3 py-3">Họ tên</th>
+                  <th className="px-3 py-3">Hạng</th>
+                  <th className="px-3 py-3">Điểm</th>
+                  <th className="px-3 py-3 w-36">JD Fit</th>
+                  <th className="px-3 py-3 hidden md:table-cell">File</th>
+                  <th className="px-3 py-3 w-8" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/[0.04]">
+                {filtered.map((c) => {
+                  const grade = getGrade(c);
+                  const score = getScore(c);
+                  const gs = GRADE_STYLE[grade] || GRADE_STYLE.C;
+                  return (
+                    <tr
+                      key={c.id}
+                      onClick={() => {
+                        setDetailCandidate(c);
+                        setDetailPage(1);
+                      }}
+                      className="hover:bg-slate-800/30 transition-colors cursor-pointer group"
+                    >
+                      <td
+                        className="px-4 py-3"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleSelect(c.id);
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(c.id)}
+                          onChange={() => toggleSelect(c.id)}
+                          className="rounded border-slate-700 bg-slate-900 text-indigo-500 w-3.5 h-3.5 cursor-pointer"
+                        />
+                      </td>
+                      <td className="px-2 py-3 text-[11px] text-slate-600 font-mono">
+                        {c.rank}
+                      </td>
+                      <td className="px-3 py-3">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${gs.dot}`}
+                          />
+                          <span className="text-[12px] font-semibold text-slate-200">
+                            {c.candidateName || "Chưa xác định"}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-3">
+                        <span
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${gs.badge}`}
+                        >
+                          {grade}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3 text-[13px] font-bold text-white tabular-nums">
+                        {score}
+                      </td>
+                      <td className="px-3 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] text-slate-300 tabular-nums w-9 text-right">
+                            {c.jdFit}%
+                          </span>
+                          <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden min-w-0 hidden sm:block">
+                            <div
+                              className={`h-full bg-gradient-to-r ${gs.bar} rounded-full`}
+                              style={{ width: `${c.jdFit}%` }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-3 py-3 text-[10px] text-slate-600 truncate max-w-[120px] font-mono hidden md:table-cell">
+                        {c.fileName}
+                      </td>
+                      <td className="px-3 py-3">
+                        <i className="fa-solid fa-chevron-right text-indigo-500 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </td>
+                    </tr>
+                  );
+                })}
+                {filtered.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={8}
+                      className="px-4 py-12 text-center text-slate-600 text-[12px]"
+                    >
+                      Không tìm thấy ứng viên phù hợp.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        {/* Body Container with Pages */}
-        <div className="flex-1 relative overflow-hidden">
-          {/* Page 1: Summary */}
-          <div 
-            className={`absolute inset-0 transition-transform duration-500 ease-in-out p-6 overflow-y-auto custom-scrollbar ${
-              currentPage === 1 ? 'translate-x-0' : '-translate-x-full opacity-0'
-            }`}
-          >
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr,2fr] gap-8">
-              {/* Left Column: Basic Info & Recommendation */}
-              <div className="space-y-6">
-                <div className="p-6 bg-[#0B1220] rounded-2xl border border-[#1F2937]">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="text-center flex-1 border-r border-[#1F2937]">
-                      <p className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Overall Score</p>
-                      <p className="text-4xl font-bold text-white mt-1">{overallScore}</p>
+        {/* RIGHT: Stats sidebar */}
+        <div className="w-52 flex-shrink-0 border-l border-white/5 flex flex-col bg-card/80 overflow-y-auto custom-scrollbar hidden lg:flex">
+          <div className="p-4 space-y-4">
+            {/* Summary stats */}
+            <div>
+              <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-3">
+                Tổng quan
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { label: "Tổng CV", val: summary.total, color: "text-white" },
+                  {
+                    label: "TB điểm",
+                    val: summary.avgScore,
+                    color: "text-white",
+                  },
+                  {
+                    label: "Hạng A",
+                    val: summary.A,
+                    color: "text-emerald-400",
+                  },
+                  { label: "Hạng B", val: summary.B, color: "text-blue-400" },
+                  { label: "Hạng C", val: summary.C, color: "text-amber-400" },
+                  { label: "Lỗi", val: summary.FAILED, color: "text-red-400" },
+                ].map(({ label, val, color }) => (
+                  <div
+                    key={label}
+                    className="bg-slate-900 border border-slate-800 rounded-xl p-3 text-center"
+                  >
+                    <div className={`text-lg font-black tabular-nums ${color}`}>
+                      {val}
                     </div>
-                    <div className="text-center flex-1 border-r border-[#1F2937]">
-                      <p className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Rank</p>
-                      <span className={`inline-block mt-2 px-3 py-1 rounded-lg text-sm font-bold ${grade === 'A' ? 'bg-emerald-500/10 text-emerald-400' :
-                        grade === 'B' ? 'bg-blue-500/10 text-blue-400' :
-                          'bg-amber-500/10 text-amber-400'
-                        }`}>
-                        {grade}
-                      </span>
-                    </div>
-                    <div className="text-center flex-1">
-                      <p className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Match JD</p>
-                      <p className="text-2xl font-bold text-blue-400 mt-1">{jdFitScore}%</p>
+                    <div className="text-[9px] text-slate-600 font-medium uppercase tracking-wide mt-0.5">
+                      {label}
                     </div>
                   </div>
+                ))}
+              </div>
+            </div>
 
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-xs text-slate-500 mb-1">Position</p>
-                      <p className="text-sm font-medium text-slate-200">{candidate.jobTitle || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500 mb-1">File Name</p>
-                      <p className="text-sm font-medium text-slate-200 truncate">{candidate.fileName}</p>
-                    </div>
-                  </div>
+            {/* Grade distribution bar */}
+            {summary.total > 0 && (
+              <div>
+                <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-2">
+                  Phân phối
+                </p>
+                <div className="flex h-2 rounded-full overflow-hidden gap-0.5">
+                  {summary.A > 0 && (
+                    <div
+                      className="bg-emerald-500"
+                      style={{ flex: summary.A }}
+                    />
+                  )}
+                  {summary.B > 0 && (
+                    <div className="bg-blue-500" style={{ flex: summary.B }} />
+                  )}
+                  {summary.C > 0 && (
+                    <div className="bg-amber-500" style={{ flex: summary.C }} />
+                  )}
+                  {summary.FAILED > 0 && (
+                    <div
+                      className="bg-red-500"
+                      style={{ flex: summary.FAILED }}
+                    />
+                  )}
                 </div>
-
-                <div className="p-5 bg-blue-500/5 rounded-2xl border border-blue-500/20">
-                  <h4 className="text-sm font-bold text-blue-400 flex items-center gap-2 mb-3">
-                    <i className="fa-solid fa-robot"></i>
-                    AI Recommendation
-                  </h4>
-                  <p className="text-sm text-slate-300 leading-relaxed italic">
-                    "{overallScore >= 70 ? 'Highly recommended candidate with strong alignment to project requirements.' :
-                      overallScore >= 50 ? 'Potential candidate with relevant skills, recommended for secondary review.' :
-                        'Limited alignment with current JD requirements.'}"
-                  </p>
+                <div className="flex gap-2 mt-2 flex-wrap">
+                  {[
+                    ["A", "bg-emerald-500"],
+                    ["B", "bg-blue-500"],
+                    ["C", "bg-amber-500"],
+                    ["✗", "bg-red-500"],
+                  ].map(([l, cl]) => (
+                    <div key={l} className="flex items-center gap-1">
+                      <span className={`w-2 h-2 rounded-full ${cl}`} />
+                      <span className="text-[9px] text-slate-600">{l}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
+            )}
 
-              {/* Right Column: AI Summary Sections */}
-              <div className="space-y-6">
+            {/* Selected count */}
+            {selectedIds.size > 0 && (
+              <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/8 p-3">
+                <p className="text-[11px] font-bold text-indigo-400">
+                  {selectedIds.size} đã chọn
+                </p>
+                <button
+                  onClick={exportCSV}
+                  className="mt-2 w-full h-7 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold transition-all flex items-center justify-center gap-1.5"
+                >
+                  <i className="fa-solid fa-download text-xs" /> Xuất CSV
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* AI Chatbot toggle */}
+          {analysisData && (
+            <div className="mt-auto p-4 border-t border-white/5">
+              <button
+                onClick={() => setShowChatbot(!showChatbot)}
+                className={`w-full h-9 rounded-xl font-bold text-[11px] transition-all flex items-center justify-center gap-2 ${showChatbot ? "bg-slate-800 border border-slate-700 text-slate-300" : "bg-gradient-to-r from-indigo-500 to-violet-500 text-white hover:brightness-110"}`}
+              >
+                <i
+                  className={`fa-solid ${showChatbot ? "fa-xmark" : "fa-robot"} text-xs`}
+                />
+                {showChatbot ? "Đóng AI" : "AI Chat"}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ═══ DETAIL MODAL ═══ */}
+      {detailCandidate && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
+          <div
+            className="absolute inset-0 bg-background/85 backdrop-blur-md"
+            onClick={() => setDetailCandidate(null)}
+          />
+          <div className="relative w-full max-w-4xl h-[88vh] bg-slate-900 border border-slate-700/60 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            {/* Modal header */}
+            <div className="flex items-center gap-3 px-5 py-3.5 border-b border-slate-800 flex-shrink-0">
+              <div
+                className={`w-2 h-8 rounded-full ${GRADE_STYLE[getGrade(detailCandidate)]?.dot || "bg-slate-500"}`}
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-bold text-white leading-none">
+                  {detailCandidate.candidateName}
+                </p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span
+                    className={`px-2 py-0.5 rounded text-[10px] font-bold border ${GRADE_STYLE[getGrade(detailCandidate)]?.badge}`}
+                  >
+                    {getGrade(detailCandidate)}
+                  </span>
+                  <span className="text-[11px] text-slate-400">
+                    {getScore(detailCandidate)} điểm · JD Fit{" "}
+                    {detailCandidate.jdFit}%
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setDetailCandidate(null)}
+                className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 hover:text-white transition-all flex items-center justify-center flex-shrink-0"
+              >
+                <i className="fa-solid fa-xmark text-xs" />
+              </button>
+            </div>
+            {/* Modal body */}
+            <div className="flex-1 relative overflow-hidden">
+              <div
+                className={`absolute inset-0 p-5 overflow-y-auto custom-scrollbar transition-all duration-300 ${detailPage === 1 ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0 pointer-events-none"}`}
+              >
                 <ExpandedContent
-                  candidate={candidate}
+                  candidate={detailCandidate}
                   expandedCriteria={expandedCriteria}
-                  onToggleCriterion={handleToggleCriterion}
+                  onToggleCriterion={(id, c) =>
+                    setExpandedCriteria((p) => ({
+                      ...p,
+                      [id]: { ...p[id], [c]: !p[id]?.[c] },
+                    }))
+                  }
                   jdText={jdText}
                   viewMode="summary"
                 />
               </div>
-            </div>
-          </div>
-
-          {/* Page 2: Detailed Analysis */}
-          <div 
-            className={`absolute inset-0 transition-transform duration-500 ease-in-out p-6 overflow-y-auto custom-scrollbar ${
-              currentPage === 2 ? 'translate-x-0' : 'translate-x-full opacity-0'
-            }`}
-          >
-            <div className="max-w-4xl mx-auto space-y-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-cyan-500/10 rounded-xl flex items-center justify-center text-cyan-400">
-                  <i className="fa-solid fa-magnifying-glass-chart text-xl"></i>
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-white">Detailed Analysis</h3>
-                  <p className="text-xs text-slate-500">Breakdown of scoring criteria and evidence in CV</p>
-                </div>
+              <div
+                className={`absolute inset-0 p-5 overflow-y-auto custom-scrollbar transition-all duration-300 ${detailPage === 2 ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none"}`}
+              >
+                <ExpandedContent
+                  candidate={detailCandidate}
+                  expandedCriteria={expandedCriteria}
+                  onToggleCriterion={(id, c) =>
+                    setExpandedCriteria((p) => ({
+                      ...p,
+                      [id]: { ...p[id], [c]: !p[id]?.[c] },
+                    }))
+                  }
+                  jdText={jdText}
+                  viewMode="details"
+                />
               </div>
-              
-              <ExpandedContent
-                candidate={candidate}
-                expandedCriteria={expandedCriteria}
-                onToggleCriterion={handleToggleCriterion}
-                jdText={jdText}
-                viewMode="details"
-              />
             </div>
-          </div>
-        </div>
-
-        {/* Footer Navigation */}
-        <div className="px-6 py-4 border-t border-[#1F2937] bg-[#111827] flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="flex gap-1.5">
-              <div className={`w-2 h-2 rounded-full transition-all duration-300 ${currentPage === 1 ? 'w-6 bg-blue-500' : 'bg-slate-700'}`}></div>
-              <div className={`w-2 h-2 rounded-full transition-all duration-300 ${currentPage === 2 ? 'w-6 bg-blue-500' : 'bg-slate-700'}`}></div>
+            {/* Modal footer */}
+            <div className="px-5 py-3 border-t border-slate-800 flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-1.5">
+                <div
+                  className={`h-1.5 rounded-full transition-all duration-300 ${detailPage === 1 ? "w-5 bg-indigo-500" : "w-1.5 bg-slate-700"}`}
+                />
+                <div
+                  className={`h-1.5 rounded-full transition-all duration-300 ${detailPage === 2 ? "w-5 bg-indigo-500" : "w-1.5 bg-slate-700"}`}
+                />
+              </div>
+              <div className="flex gap-2">
+                {detailPage === 2 && (
+                  <button
+                    onClick={() => setDetailPage(1)}
+                    className="h-8 px-4 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-[11px] font-bold transition-all flex items-center gap-1.5"
+                  >
+                    <i className="fa-solid fa-arrow-left text-xs" /> Tóm tắt
+                  </button>
+                )}
+                {detailPage === 1 ? (
+                  <button
+                    onClick={() => setDetailPage(2)}
+                    className="h-8 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold transition-all flex items-center gap-1.5"
+                  >
+                    Chi tiết <i className="fa-solid fa-arrow-right text-xs" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setDetailCandidate(null)}
+                    className="h-8 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold transition-all flex items-center gap-1.5"
+                  >
+                    Xong <i className="fa-solid fa-check text-xs" />
+                  </button>
+                )}
+              </div>
             </div>
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-2">Page {currentPage} / 2</span>
-          </div>
-
-          <div className="flex gap-3">
-            {currentPage === 2 ? (
-              <button
-                onClick={goToBack}
-                className="px-5 py-2 rounded-xl bg-[#1F2937] hover:bg-slate-700 text-slate-200 text-sm font-bold flex items-center gap-2 transition-all border border-slate-700"
-              >
-                <i className="fa-solid fa-arrow-left"></i>
-                Back
-              </button>
-            ) : null}
-
-            {currentPage === 1 ? (
-              <button
-                onClick={goToNext}
-                className="px-6 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold flex items-center gap-2 transition-all shadow-lg shadow-blue-900/20"
-              >
-                Next
-                <i className="fa-solid fa-arrow-right"></i>
-              </button>
-            ) : (
-              <button
-                onClick={onClose}
-                className="px-6 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold flex items-center gap-2 transition-all"
-              >
-                Done
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-const AnalysisResults: React.FC<AnalysisResultsProps> = ({ isLoading, loadingMessage, results, jobPosition, locationRequirement, jdText, setActiveStep, markStepAsCompleted, activeStep = 'analysis', completedSteps = [], sidebarCollapsed = false }) => {
-  const navigate = useNavigate();
-  const [filter, setFilter] = useState('all');
-  const [sortBy, setSortBy] = useState<'score' | 'jdFit'>('score');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [selectedCandidateForModal, setSelectedCandidateForModal] = useState<RankedCandidate | null>(null);
-  const [showChatbot, setShowChatbot] = useState(false);
-  const [showInterviewQuestions, setShowInterviewQuestions] = useState(false);
-
-  const debouncedSetSearchTerm = useCallback(
-    debounce((value: string) => setDebouncedSearchTerm(value), 300),
-    []
-  );
-
-  const handleSearchChange = (value: string) => {
-    setSearchTerm(value);
-    debouncedSetSearchTerm(value);
-  };
-
-  const handleSelectOne = (id: string) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const handleSelectAll = () => {
-    if (selectedIds.size === filteredResults.length) setSelectedIds(new Set());
-    else setSelectedIds(new Set(filteredResults.map(c => c.id)));
-  };
-
-  const exportSelectedToCSV = () => {
-    if (selectedIds.size === 0) return;
-    const selectedData = filteredResults.filter(c => selectedIds.has(c.id));
-    const csvContent = [
-      ['STT', 'HoTen', 'Hang', 'DiemTong', 'PhuHopJD%', 'ChucDanh', 'FileName'],
-      ...selectedData.map((c, index) => [
-        (index + 1).toString(),
-        c.candidateName || '',
-        c.status === 'FAILED' ? 'FAILED' : (c.analysis?.['Hạng'] || 'C'),
-        c.status === 'FAILED' ? '0' : (c.analysis?.['Tổng điểm']?.toString() || '0'),
-        c.status === 'FAILED' ? '0' : (parseInt(c.analysis?.['Chi tiết']?.find(i => i['Tiêu chí'].startsWith('Phù hợp JD'))?.['Điểm'].split('/')[0] || '0', 10)).toString(),
-        c.jobTitle || '',
-        c.fileName || ''
-      ])
-    ].map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(',')).join('\n');
-    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `candidates_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-  };
-
-  const summaryData = useMemo(() => {
-    if (!results) return { total: 0, countA: 0, countB: 0, countC: 0 };
-    const success = results.filter(c => c.status === 'SUCCESS' && c.analysis);
-    const countA = success.filter(c => c.analysis?.['Hạng'] === 'A').length;
-    const countB = success.filter(c => c.analysis?.['Hạng'] === 'B').length;
-    return { total: results.length, countA, countB, countC: results.length - countA - countB };
-  }, [results]);
-
-  const rankedAndSortedResults = useMemo((): RankedCandidate[] => {
-    if (!results) return [];
-    const gradeValues: Record<string, number> = { 'A': 3, 'B': 2, 'C': 1, 'FAILED': 0 };
-    const enriched = results.map(c => ({
-      ...c,
-      id: c.id || `c-${Math.random()}`,
-      jdFitScore: parseInt(c.analysis?.['Chi tiết']?.find(i => i['Tiêu chí'].startsWith('Phù hợp JD'))?.['Điểm'].split('/')[0] || '0', 10),
-      gradeValue: gradeValues[c.status === 'FAILED' ? 'FAILED' : (c.analysis?.['Hạng'] || 'C')]
-    }));
-    return enriched.sort((a, b) => {
-      const valA = sortBy === 'score' ? (a.analysis?.['Tổng điểm'] || 0) : a.jdFitScore;
-      const valB = sortBy === 'score' ? (b.analysis?.['Tổng điểm'] || 0) : b.jdFitScore;
-      return valB - valA;
-    }).map((c, i) => ({ ...c, rank: i + 1 }));
-  }, [results, sortBy]);
-
-  const filteredResults = useMemo(() => {
-    return rankedAndSortedResults.filter(c => {
-      const matchesSearch = !debouncedSearchTerm ||
-        c.candidateName?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-        c.jobTitle?.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
-      const matchesFilter = filter === 'all' ||
-        (c.status === 'FAILED' ? filter === 'FAILED' : c.analysis?.['Hạng'] === filter);
-      return matchesSearch && matchesFilter;
-    });
-  }, [rankedAndSortedResults, debouncedSearchTerm, filter]);
-
-  const analysisData = useMemo(() => {
-    if (!results?.length) return null;
-    return {
-      timestamp: Date.now(),
-      job: { position: jobPosition, locationRequirement: locationRequirement || 'N/A' },
-      candidates: results,
-    };
-  }, [results, jobPosition, locationRequirement]);
-
-  if (isLoading) return <section className="w-full h-screen bg-[#0B1220] flex items-center justify-center"><Loader message={loadingMessage} /></section>;
-
-  if (!results?.length) return (
-    <section className="w-full h-screen bg-[#0B1220] flex flex-col items-center justify-center text-center p-6">
-      <div className="w-20 h-20 bg-[#111827] border border-[#1F2937] rounded-3xl flex items-center justify-center mb-6 text-slate-500 shadow-xl">
-        <i className="fa-solid fa-chart-line text-3xl"></i>
-      </div>
-      <h3 className="text-2xl font-bold text-white mb-2">Ready for Analysis</h3>
-      <p className="text-slate-400 max-w-sm">Results will appear here after you upload CVs and provide a JD.</p>
-    </section>
-  );
-
-  return (
-    <div className="w-full min-h-screen bg-[#0B1220] p-4 md:p-8 space-y-6">
-      <div className="space-y-4">
-        <CampaignHeader
-          position={jobPosition}
-          total={summaryData.total}
-          countA={summaryData.countA}
-          countB={summaryData.countB}
-          countC={summaryData.countC}
-          onQuestionsClick={() => setShowInterviewQuestions(true)}
-          onStatsClick={() => {
-            if (setActiveStep) setActiveStep('dashboard');
-            if (markStepAsCompleted) markStepAsCompleted('analysis');
-            navigate('/detailed-analytics');
-          }}
-        />
-        <div className="px-2">
-          <ProgressBar activeStep={activeStep as any} completedSteps={completedSteps} />
-        </div>
-      </div>
-
-      <FilterBar
-        searchTerm={searchTerm}
-        onSearchChange={handleSearchChange}
-        filter={filter}
-        onFilterChange={setFilter}
-        sortBy={sortBy}
-        onSortChange={setSortBy}
-      />
-
-      <CandidateTable
-        candidates={filteredResults}
-        selectedIds={selectedIds}
-        onSelectAll={handleSelectAll}
-        onSelectOne={handleSelectOne}
-        onDetail={(c) => setSelectedCandidateForModal(c)}
-      />
-
-      {selectedIds.size > 0 && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#111827] border border-blue-500/30 p-4 rounded-full shadow-2xl flex items-center gap-6 z-40 animate-in slide-in-from-bottom-4">
-          <span className="text-sm text-slate-300 font-medium ml-2">{selectedIds.size} candidates selected</span>
-          <div className="flex gap-2">
-            <button onClick={exportSelectedToCSV} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-full transition-colors">Export CSV</button>
-            <button onClick={() => setSelectedIds(new Set())} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs font-bold rounded-full transition-colors">Clear</button>
           </div>
         </div>
       )}
 
-      <CandidateDetailModal
-        candidate={selectedCandidateForModal}
-        onClose={() => setSelectedCandidateForModal(null)}
-        jdText={jdText}
-      />
-
-      {/* AI Assistant Button */}
-      {analysisData && (
-        <button
-          onClick={() => setShowChatbot(!showChatbot)}
-          className="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-2xl flex items-center justify-center transition-all z-50 hover:scale-110"
-        >
-          <i className="fa-solid fa-robot text-xl"></i>
-        </button>
-      )}
-
+      {/* Chatbot panel */}
       {showChatbot && analysisData && (
-        <div className="fixed bottom-24 right-6 w-96 max-w-[calc(100vw-3rem)] z-50">
-          <ChatbotPanel analysisData={analysisData} onClose={() => setShowChatbot(false)} />
+        <div className="fixed bottom-6 right-6 w-80 z-50">
+          <ChatbotPanel
+            analysisData={analysisData}
+            onClose={() => setShowChatbot(false)}
+          />
         </div>
       )}
 
-      {showInterviewQuestions && analysisData && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[70] flex items-center justify-center p-4">
-          <div className="w-full max-w-5xl max-h-[90vh] bg-[#111827] rounded-3xl overflow-hidden shadow-2xl">
+      {/* Mobile chatbot FAB */}
+      <div className="lg:hidden">
+        {analysisData && (
+          <button
+            onClick={() => setShowChatbot(!showChatbot)}
+            className="fixed bottom-6 right-6 w-11 h-11 bg-gradient-to-br from-indigo-500 to-violet-600 text-white rounded-full shadow-2xl flex items-center justify-center transition-all z-50 hover:scale-110"
+          >
+            <i
+              className={`fa-solid ${showChatbot ? "fa-xmark" : "fa-robot"} text-sm`}
+            />
+          </button>
+        )}
+      </div>
+
+      {/* Interview Q modal */}
+      {showInterviewQ && analysisData && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-[70] flex items-center justify-center p-4">
+          <div className="w-full max-w-4xl max-h-[88vh] bg-slate-900 rounded-2xl border border-slate-700/60 overflow-hidden shadow-2xl">
             <InterviewQuestionGenerator
               analysisData={analysisData}
-              selectedCandidates={Array.from(selectedIds).map(id => results.find(c => c.id === id)!).filter(Boolean)}
-              onClose={() => setShowInterviewQuestions(false)}
+              selectedCandidates={Array.from(selectedIds)
+                .map((id) => results.find((c) => c.id === id)!)
+                .filter(Boolean)}
+              onClose={() => setShowInterviewQ(false)}
             />
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 };
 

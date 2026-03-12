@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import { auth } from '../../config/firebase';
-import { UserProfileService } from '../../services/storage/userProfileService';
-import SyncNotification from '../ui/SyncNotification';
+import React, { useState, useEffect, useRef } from "react";
+import { onAuthStateChanged, User } from "firebase/auth";
+import { auth } from "../../config/firebase";
+import { UserProfileService } from "../../services/storage/userProfileService";
+import SyncNotification from "../ui/SyncNotification";
 
 interface NavbarProps {
   userEmail?: string;
@@ -14,296 +14,285 @@ interface NavbarProps {
   sidebarCollapsed?: boolean;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ userEmail, onLogout, onLoginRequest, onBrandClick, sidebarOpen, onToggleSidebar, sidebarCollapsed }) => {
-  const [isDarkMode, setIsDarkMode] = useState(false);
+const Navbar: React.FC<NavbarProps> = ({
+  userEmail,
+  onLogout,
+  onLoginRequest,
+  onBrandClick,
+  sidebarOpen,
+  onToggleSidebar,
+  sidebarCollapsed,
+}) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
-
-  // Sync notification states
+  const [userName, setUserName] = useState("");
   const [syncNotification, setSyncNotification] = useState({
     show: false,
-    syncType: 'avatar' as 'avatar' | 'history' | 'profile',
+    syncType: "avatar" as "avatar" | "history" | "profile",
     success: false,
-    message: ''
+    message: "",
   });
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  // Settings states
-
-
-  // Khởi tạo dark mode từ localStorage
+  // Load avatar + name
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    const isDark = savedTheme === 'dark';
-    setIsDarkMode(isDark);
-    document.documentElement.classList.toggle('dark', isDark);
-  }, []);
-
-  // Load saved avatar từ Firebase hoặc localStorage
-  useEffect(() => {
-    const loadUserProfile = async () => {
-      if (userEmail) {
-        // Lắng nghe auth state để lấy uid
-        const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
-          if (user && user.email === userEmail) {
-            try {
-              // Lấy profile từ Firebase
-              const profile = await UserProfileService.getUserProfile(user.uid);
-              if (profile?.avatar) {
-                setUserAvatar(profile.avatar);
-              } else {
-                // Fallback to localStorage
-                const localAvatar = localStorage.getItem(`avatar_${userEmail}`);
-                setUserAvatar(localAvatar);
-              }
-
-              // Migrate dữ liệu local sang Firebase nếu cần
-              await UserProfileService.migrateLocalDataToFirebase(user.uid, user.email!);
-            } catch (error) {
-              console.error('Error loading user profile:', error);
-              // Fallback to localStorage
-              const localAvatar = localStorage.getItem(`avatar_${userEmail}`);
-              setUserAvatar(localAvatar);
-            }
-          }
-        });
-
-        return () => unsubscribe();
+    if (!userEmail) return;
+    const unsub = onAuthStateChanged(auth, async (user: User | null) => {
+      if (!user || user.email !== userEmail) return;
+      setUserName(user.displayName || userEmail.split("@")[0]);
+      if (user.photoURL) {
+        setUserAvatar(user.photoURL);
+        return;
       }
-    };
-
-    loadUserProfile();
+      try {
+        const profile = await UserProfileService.getUserProfile(user.uid);
+        setUserAvatar(
+          profile?.avatar || localStorage.getItem(`avatar_${userEmail}`),
+        );
+        await UserProfileService.migrateLocalDataToFirebase(
+          user.uid,
+          user.email!,
+        );
+      } catch {
+        setUserAvatar(localStorage.getItem(`avatar_${userEmail}`));
+      }
+    });
+    return unsub;
   }, [userEmail]);
 
-  // Toggle dark mode
-  const toggleDarkMode = () => {
-    const newMode = !isDarkMode;
-    setIsDarkMode(newMode);
-    localStorage.setItem('theme', newMode ? 'dark' : 'light');
-    document.documentElement.classList.toggle('dark', newMode);
+  // Close menu on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+    if (showUserMenu) document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showUserMenu]);
+
+  const getInitials = (name: string) => {
+    const parts = name.trim().split(" ");
+    return parts.length >= 2
+      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+      : (name[0]?.toUpperCase() ?? "?");
   };
 
-  // Tạo avatar từ email
-  const getInitials = (email: string) => {
-    return email.charAt(0).toUpperCase();
-  };
+  const avatarColor = userEmail
+    ? [
+        "bg-violet-600",
+        "bg-cyan-600",
+        "bg-emerald-600",
+        "bg-rose-600",
+        "bg-amber-600",
+      ][userEmail.charCodeAt(0) % 5]
+    : "bg-slate-700";
 
-  // Tạo màu avatar từ email
-  const getAvatarColor = (email: string) => {
-    const colors = ['bg-red-500', 'bg-green-500', 'bg-blue-500', 'bg-yellow-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500'];
-    const index = email.charCodeAt(0) % colors.length;
-    return colors[index];
-  };
-
-  // Handle avatar upload - Lưu vào Firebase
-  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file && userEmail) {
-      if (file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/jpg') {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          const avatarDataUrl = e.target?.result as string;
-          setUserAvatar(avatarDataUrl);
-
-          try {
-            // Lấy current user
-            const currentUser = auth.currentUser;
-            if (currentUser) {
-              // Lưu vào Firebase
-              await UserProfileService.updateUserAvatar(currentUser.uid, avatarDataUrl);
-              console.log('Avatar updated successfully in Firebase');
-
-              // Show success notification
-              setSyncNotification({
-                show: true,
-                syncType: 'avatar',
-                success: true,
-                message: 'Avatar đã được đồng bộ thành công với tài khoản Gmail!'
-              });
-            } else {
-              // Fallback to localStorage
-              localStorage.setItem(`avatar_${userEmail}`, avatarDataUrl);
-            }
-          } catch (error) {
-            console.error('Error updating avatar in Firebase:', error);
-            // Fallback to localStorage
-            localStorage.setItem(`avatar_${userEmail}`, avatarDataUrl);
-
-            // Show info notification for guests
-            setSyncNotification({
-              show: true,
-              syncType: 'avatar',
-              success: false,
-              message: 'Vui lòng đăng nhập để đồng bộ avatar với tài khoản Gmail.'
-            });            // Show warning notification
-            setSyncNotification({
-              show: true,
-              syncType: 'avatar',
-              success: false,
-              message: 'Không thể đồng bộ với Firebase. Avatar đã lưu cục bộ.'
-            });
-          }
-        };
-        reader.readAsDataURL(file);
-      } else {
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !userEmail) return;
+    if (!["image/jpeg", "image/png", "image/jpg"].includes(file.type)) {
+      setSyncNotification({
+        show: true,
+        syncType: "avatar",
+        success: false,
+        message: "Chỉ hỗ trợ JPG và PNG.",
+      });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const url = ev.target?.result as string;
+      setUserAvatar(url);
+      try {
+        if (auth.currentUser) {
+          await UserProfileService.updateUserAvatar(auth.currentUser.uid, url);
+          setSyncNotification({
+            show: true,
+            syncType: "avatar",
+            success: true,
+            message: "Avatar đã được đồng bộ thành công!",
+          });
+        } else {
+          localStorage.setItem(`avatar_${userEmail}`, url);
+        }
+      } catch {
+        localStorage.setItem(`avatar_${userEmail}`, url);
         setSyncNotification({
           show: true,
-          syncType: 'avatar',
+          syncType: "avatar",
           success: false,
-          message: 'Chỉ hỗ trợ định dạng JPG và PNG.'
+          message: "Lưu cục bộ. Đăng nhập để đồng bộ.",
         });
       }
-    }
+    };
+    reader.readAsDataURL(file);
   };
 
-
+  // ── Avatar element ──────────────────────────────────────────────────────
+  const AvatarCircle = ({ size = "sm" }: { size?: "sm" | "lg" }) => {
+    const dim = size === "lg" ? "w-12 h-12 text-sm" : "w-8 h-8 text-[11px]";
+    return (
+      <div
+        className={`${dim} rounded-xl flex items-center justify-center text-white font-bold overflow-hidden border border-white/10 flex-shrink-0 ${!userAvatar ? avatarColor : ""}`}
+      >
+        {userAvatar ? (
+          <img
+            src={userAvatar}
+            alt="avatar"
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          getInitials(userName || userEmail || "?")
+        )}
+      </div>
+    );
+  };
 
   return (
     <>
-      <nav className={`fixed top-0 h-14 flex items-center justify-between px-4 bg-gradient-to-r from-slate-900/95 via-slate-800/95 to-slate-900/95 dark:from-gray-900/95 dark:via-gray-800/95 dark:to-gray-900/95 backdrop-blur-lg border-b border-slate-600/30 dark:border-gray-600/30 z-40 navbar shadow-lg transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'md:left-16 md:w-[calc(100vw-4rem)]' : 'md:left-64 md:w-[calc(100vw-16rem)]'} left-0 w-full`}>
+      <nav
+        className={`
+          fixed top-0 left-0 right-0 h-14 z-40 flex items-center justify-between px-4
+          bg-slate-950/95 backdrop-blur-sm border-b border-white/5
+          transition-[left] duration-300
+          md:left-64
+        `}
+        style={{ left: sidebarCollapsed ? 72 : undefined }}
+      >
+        {/* Left — mobile toggle + brand */}
         <div className="flex items-center gap-3">
-          {/* Sidebar Toggle Button - Only on mobile */}
           <button
             onClick={onToggleSidebar}
-            className="md:hidden w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700/50 transition-colors duration-200 border border-slate-600/30 hover:border-slate-500/50"
-            title={sidebarOpen ? "Đóng thanh bên" : "Mở thanh bên"}
+            className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-white hover:bg-slate-800 transition-colors border border-white/5"
           >
-            <i className={`fa-solid ${sidebarOpen ? 'fa-xmark' : 'fa-bars'} text-sm transition-transform duration-200`}></i>
+            <i
+              className={`fa-solid ${sidebarOpen ? "fa-xmark" : "fa-bars"} text-sm`}
+            />
           </button>
 
-          {/* Logo & Brand - Hidden on desktop since it's in sidebar */}
-          <div className="md:hidden flex items-center gap-3 cursor-pointer select-none" onClick={onBrandClick} title="Support HR">
-            <div className="w-9 h-9 rounded-lg overflow-hidden border border-white/10 bg-slate-800/50 flex items-center justify-center">
+          {/* Brand — mobile only */}
+          <div
+            className="md:hidden flex items-center gap-2.5 cursor-pointer select-none"
+            onClick={onBrandClick}
+          >
+            <div className="w-7 h-7 rounded-lg overflow-hidden border border-white/10 flex-shrink-0">
               <img
                 src="/images/logos/logo.jpg"
                 alt="Support HR"
-                className="object-cover w-full h-full"
-                onError={(e) => { const t = e.currentTarget as HTMLImageElement; t.style.display = 'none'; (t.parentElement as HTMLElement).innerHTML = '<span class=\"font-bold text-sm text-white\">HR</span>'; }}
-                draggable={false}
+                className="w-full h-full object-contain"
               />
             </div>
-            <span className="text-lg font-bold tracking-wide bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Support HR</span>
+            <span className="text-[13px] font-bold text-white">Support HR</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-
+        {/* Right — user area */}
+        <div className="flex items-center gap-2">
           {userEmail ? (
-            <div className="relative">
-              {/* User Avatar */}
+            <div className="relative" ref={menuRef}>
+              {/* Avatar trigger */}
               <button
-                onClick={() => setShowUserMenu(!showUserMenu)}
-                className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold hover:ring-2 hover:ring-white/50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400/60 text-sm border border-white/20 overflow-hidden"
-                title="Menu tài khoản"
+                onClick={() => setShowUserMenu((p) => !p)}
+                className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-xl hover:bg-slate-800/60 transition-colors group"
               >
-                {userAvatar ? (
-                  <img
-                    src={userAvatar}
-                    alt="Avatar"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className={`w-full h-full ${getAvatarColor(userEmail)} flex items-center justify-center rounded-full`}>
-                    {getInitials(userEmail)}
-                  </div>
-                )}
+                <AvatarCircle />
+                <span className="hidden sm:block text-[11px] font-semibold text-slate-300 group-hover:text-white transition-colors max-w-[120px] truncate">
+                  {userName || userEmail.split("@")[0]}
+                </span>
+                <i className="hidden sm:block fa-solid fa-chevron-down text-[9px] text-slate-600 group-hover:text-slate-400 transition-colors" />
               </button>
 
-              {/* Dropdown Menu */}
+              {/* Dropdown */}
               {showUserMenu && (
-                <div className="absolute right-0 mt-4 w-72 bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 z-50 overflow-hidden ring-1 ring-white/5 transition-all animate-in fade-in zoom-in-95 duration-200">
-                  {/* User Info Header - Premium Gradient */}
-                  <div className="px-5 py-6 bg-gradient-to-br from-blue-600/20 via-purple-600/20 to-slate-900 border-b border-white/10 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-3xl rounded-full"></div>
-                    <div className="relative z-10 flex flex-col items-center text-center space-y-3">
-                      <div className="relative group">
-                        <div className="absolute -inset-1 bg-gradient-to-tr from-cyan-400 to-purple-500 rounded-xl blur opacity-30 group-hover:opacity-60 transition duration-500"></div>
-                        <div className="relative w-16 h-16 rounded-xl bg-slate-800 flex items-center justify-center text-white font-bold border border-white/20 overflow-hidden shadow-2xl">
-                          {userAvatar ? (
-                            <img
-                              src={userAvatar}
-                              alt="Avatar"
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className={`w-full h-full ${getAvatarColor(userEmail)} flex items-center justify-center text-xl`}>
-                              {getInitials(userEmail)}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="space-y-0.5">
-                        <p className="text-sm font-black text-white tracking-wide uppercase">Tài khoản</p>
-                        <p className="text-[11px] text-slate-400 font-medium truncate max-w-[240px]">{userEmail}</p>
-                      </div>
-                      <div className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-black text-emerald-400 uppercase tracking-widest flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                        Đang hoạt động
+                <div className="absolute right-0 top-full mt-2 w-64 bg-slate-900 border border-white/8 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden z-50">
+                  {/* Header */}
+                  <div className="flex items-center gap-3 px-4 py-3.5 border-b border-white/5 bg-slate-800/40">
+                    <AvatarCircle size="lg" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[12px] font-bold text-white truncate">
+                        {userName || userEmail.split("@")[0]}
+                      </p>
+                      <p className="text-[10px] text-slate-500 truncate">
+                        {userEmail}
+                      </p>
+                      <div className="flex items-center gap-1 mt-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        <span className="text-[9px] text-emerald-500 font-semibold uppercase tracking-wide">
+                          Đang hoạt động
+                        </span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="p-3 space-y-1">
-                    {/* Settings Section */}
-                    <div className="px-3 py-2">
-                      <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Cài đặt & Tiện ích</h3>
-                      <div className="grid grid-cols-1 gap-1">
-                        <button className="flex items-center gap-3 px-3 py-2.5 text-[11px] font-bold text-slate-300 hover:text-white hover:bg-white/5 rounded-xl transition-all group">
-                          <div className="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-cyan-400 group-hover:bg-cyan-400/10 transition-all">
-                            <i className="fa-solid fa-user-gear"></i>
-                          </div>
-                          Thông tin cá nhân
-                        </button>
-                        <button className="flex items-center gap-3 px-3 py-2.5 text-[11px] font-bold text-slate-300 hover:text-white hover:bg-white/5 rounded-xl transition-all group">
-                          <div className="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-purple-400 group-hover:bg-purple-400/10 transition-all">
-                            <i className="fa-solid fa-shield-halved"></i>
-                          </div>
-                          Bảo mật tài khoản
-                        </button>
+                  {/* Actions */}
+                  <div className="p-1.5 space-y-0.5">
+                    {/* Upload avatar */}
+                    <label className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-800/60 cursor-pointer transition-colors">
+                      <div className="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center flex-shrink-0">
+                        <i className="fa-solid fa-camera text-[11px] text-slate-400" />
                       </div>
-                    </div>
+                      <span className="text-[11px] text-slate-300 font-medium">
+                        Đổi ảnh đại diện
+                      </span>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept=".jpg,.jpeg,.png"
+                        onChange={handleAvatarUpload}
+                      />
+                    </label>
 
-                    <div className="pt-2 px-3 border-t border-white/5">
-                      {/* Logout */}
-                      <button
-                        onClick={() => {
-                          setShowUserMenu(false);
-                          onLogout?.();
-                        }}
-                        className="w-full flex items-center gap-3 px-3 py-3 text-[11px] font-black text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition-all group uppercase tracking-widest"
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 group-hover:scale-110 transition-all">
-                          <i className="fa-solid fa-right-from-bracket"></i>
-                        </div>
-                        <span>Đăng xuất</span>
-                        <i className="fa-solid fa-chevron-right ml-auto text-[8px] opacity-30 group-hover:translate-x-1 transition-transform"></i>
-                      </button>
-                    </div>
+                    <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-800/60 transition-colors">
+                      <div className="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center flex-shrink-0">
+                        <i className="fa-solid fa-user-gear text-[11px] text-slate-400" />
+                      </div>
+                      <span className="text-[11px] text-slate-300 font-medium">
+                        Thông tin cá nhân
+                      </span>
+                    </button>
+
+                    <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-800/60 transition-colors">
+                      <div className="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center flex-shrink-0">
+                        <i className="fa-solid fa-shield-halved text-[11px] text-slate-400" />
+                      </div>
+                      <span className="text-[11px] text-slate-300 font-medium">
+                        Bảo mật tài khoản
+                      </span>
+                    </button>
+
+                    <div className="h-px bg-white/5 mx-1 my-1" />
+
+                    <button
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        onLogout?.();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-red-500/10 transition-colors"
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center flex-shrink-0">
+                        <i className="fa-solid fa-right-from-bracket text-[11px] text-red-400" />
+                      </div>
+                      <span className="text-[11px] text-red-400 font-medium">
+                        Đăng xuất
+                      </span>
+                    </button>
                   </div>
                 </div>
-              )}
-
-              {/* Overlay */}
-              {showUserMenu && (
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setShowUserMenu(false)}
-                ></div>
               )}
             </div>
           ) : (
             onLoginRequest && (
               <button
                 onClick={onLoginRequest}
-                className="px-4 py-2 rounded-md bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400/40"
+                className="h-8 px-4 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:brightness-110 text-white text-[12px] font-bold transition-all shadow-lg shadow-cyan-900/20 flex items-center gap-1.5"
               >
-                <i className="fa-solid fa-right-to-bracket mr-2"></i>
+                <i className="fa-solid fa-right-to-bracket text-xs" />
                 Đăng nhập
               </button>
             )
           )}
         </div>
-
-
       </nav>
 
       <SyncNotification
@@ -311,7 +300,7 @@ const Navbar: React.FC<NavbarProps> = ({ userEmail, onLogout, onLoginRequest, on
         syncType={syncNotification.syncType}
         success={syncNotification.success}
         message={syncNotification.message}
-        onClose={() => setSyncNotification(prev => ({ ...prev, show: false }))}
+        onClose={() => setSyncNotification((p) => ({ ...p, show: false }))}
       />
     </>
   );
